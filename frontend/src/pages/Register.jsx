@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import '../styles/cybersec-theme.css';
+import { useState, useEffect } from 'react';
+import lightLogo from '../images/light_theme.png';
+import darkLogo from '../images/dark_theme.png';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -12,6 +13,23 @@ function Register() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  
+  // Détecter le thème actuel
+  const [theme, setTheme] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') || 'light';
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'data-theme') {
+          setTheme(document.documentElement.getAttribute('data-theme') || 'light');
+        }
+      });
+    });
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,11 +80,13 @@ function Register() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <div style={{ textAlign: 'center', marginBottom: 'var(--space-xl)' }}>
-          <h1 className="login-title">
-            SecureAuth+
-          </h1>
-          <p className="text-muted">
+        <div className="login-header">
+          <img 
+            src={theme === 'dark' ? darkLogo : lightLogo} 
+            alt="SecureAuth+" 
+            className="login-logo"
+          />
+          <p className="login-subtitle">
             Create your account
           </p>
         </div>

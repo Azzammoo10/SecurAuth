@@ -4,7 +4,7 @@ import { registrationAPI } from '../services/api';
 function Registrations() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('pending'); // 'all' or 'pending'
+  const [filter, setFilter] = useState('all'); // 'all' or 'pending'
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [comment, setComment] = useState('');
@@ -77,56 +77,86 @@ function Registrations() {
 
   if (loading) {
     return (
-      <div className="loading-spinner">
-        <div className="spinner"></div>
-        <p>Loading registrations...</p>
+      <div className="page-container">
+        <div className="loading">
+          <div className="loading-spinner"></div>
+          Loading registrations...
+        </div>
       </div>
     );
   }
 
   return (
     <div className="page-container">
-      <div className="card-header">
-        <div>
-          <h1 className="page-title">Registration Requests</h1>
-          <p className="page-subtitle">Review and approve user registration requests</p>
+      {/* Header avec icône */}
+      <div className="page-header-box">
+        <div className="page-header-icon registrations">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="8.5" cy="7" r="4"/>
+            <line x1="20" y1="8" x2="20" y2="14"/>
+            <line x1="23" y1="11" x2="17" y2="11"/>
+          </svg>
         </div>
-        <div className="btn-group">
-          <button
-            onClick={() => setFilter('pending')}
-            className={`btn btn-sm ${filter === 'pending' ? 'btn-primary' : 'btn-secondary'}`}
-          >
-            Pending ({requests.filter(r => r.status === 'PENDING').length})
-          </button>
-          <button
-            onClick={() => setFilter('all')}
-            className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
-          >
-            All
-          </button>
+        <div className="page-header-content">
+          <h1 className="page-title">Demandes d'inscription</h1>
+          <p className="page-subtitle">Évaluez et approuvez les demandes d'inscription</p>
+        </div>
+        <div className="page-header-actions">
+          <div className="btn-group">
+            <button
+              onClick={() => setFilter('pending')}
+              className={`btn btn-sm ${filter === 'pending' ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              En attente ({requests.filter(r => r.status === 'PENDING').length})
+            </button>
+            <button
+              onClick={() => setFilter('all')}
+              className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              Toutes
+            </button>
+          </div>
         </div>
       </div>
 
       {message.text && (
-        <div className={`alert alert-${message.type}`}>
+        <div className={`alert alert-${message.type} animate-fadeIn`}>
+          <span className="alert-icon">{message.type === 'success' ? '✓' : '⚠️'}</span>
           {message.text}
+          <button className="alert-close" onClick={() => setMessage({ type: '', text: '' })}>×</button>
         </div>
       )}
 
-      <div className="table-container">
-        {requests.length === 0 ? (
-          <div className="empty-state">
-            <p>No {filter === 'pending' ? 'pending ' : ''}registration requests found.</p>
+      <div className="content-card">
+        <div className="content-card-header">
+          <div className="content-card-title">
+            <div className="content-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+              </svg>
+            </div>
+            <h2>Liste des demandes</h2>
           </div>
-        ) : (
+          <span className="content-card-badge">{requests.length} demande(s)</span>
+        </div>
+        <div className="table-container">
+          {requests.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📝</div>
+              <h3>Aucune demande</h3>
+              <p>Aucune demande {filter === 'pending' ? 'en attente ' : ''}trouvée.</p>
+            </div>
+          ) : (
           <table className="table table-striped">
             <thead>
               <tr>
                 <th>DATE</th>
-                <th>FULL NAME</th>
+                <th>NOM COMPLET</th>
                 <th>EMAIL</th>
-                <th>COMPANY</th>
-                <th>STATUS</th>
+                <th>ENTREPRISE</th>
+                <th>STATUT</th>
                 <th>ACTIONS</th>
               </tr>
             </thead>
@@ -134,7 +164,7 @@ function Registrations() {
               {requests.map((request) => (
                 <tr key={request.id}>
                   <td className="font-mono text-sm">
-                    {new Date(request.requestedAt).toLocaleDateString('en-US')}
+                    {new Date(request.requestedAt).toLocaleDateString('fr-FR')}
                   </td>
                   <td>
                     <span className="text-cyber-green font-mono">
@@ -149,14 +179,15 @@ function Registrations() {
                       onClick={() => openModal(request)}
                       className="btn btn-sm btn-primary"
                     >
-                      Details
+                      Détails
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
+          )}
+        </div>
       </div>
 
       {showModal && selectedRequest && (

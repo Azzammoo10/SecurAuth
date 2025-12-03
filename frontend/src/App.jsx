@@ -10,7 +10,6 @@ import Registrations from './pages/Registrations';
 import Register from './pages/Register';
 import AccountSecurity from './pages/AccountSecurity';
 import Navbar from './components/Navbar';
-import './styles/cybersec-theme.css';
 import './App.css';
 
 function App() {

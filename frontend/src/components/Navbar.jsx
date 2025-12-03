@@ -1,10 +1,33 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import authService from '../services/authService';
 import { authAPI } from '../services/api';
+import ThemeToggle from './ThemeToggle';
+import lightLogo from '../images/light_theme.png';
+import darkLogo from '../images/dark_theme.png';
 
 function Navbar({ setIsAuthenticated }) {
   const navigate = useNavigate();
   const user = authService.getUser();
+  
+  // Détecter le thème actuel
+  const [theme, setTheme] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') || 'light';
+  });
+
+  useEffect(() => {
+    // Observer les changements d'attribut data-theme
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'data-theme') {
+          setTheme(document.documentElement.getAttribute('data-theme') || 'light');
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -21,9 +44,13 @@ function Navbar({ setIsAuthenticated }) {
   return (
     <nav className="navbar">
       <div className="navbar-content">
-        <div className="navbar-brand">
-          SecureAuth+
-        </div>
+        <Link to="/dashboard" className="navbar-brand">
+          <img 
+            src={theme === 'dark' ? darkLogo : lightLogo} 
+            alt="SecureAuth+" 
+            className="navbar-logo"
+          />
+        </Link>
         
         <ul className="navbar-menu">
           <li>
@@ -75,6 +102,7 @@ function Navbar({ setIsAuthenticated }) {
               @{user?.username}
             </span>
           </div>
+          <ThemeToggle />
           <button onClick={handleLogout} className="btn btn-secondary btn-sm">
             Logout
           </button>

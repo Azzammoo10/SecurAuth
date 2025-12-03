@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import authService from '../services/authService';
+import lightLogo from '../images/light_theme.png';
+import darkLogo from '../images/dark_theme.png';
 
 function Login({ setIsAuthenticated }) {
   const navigate = useNavigate();
@@ -16,6 +18,23 @@ function Login({ setIsAuthenticated }) {
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Détecter le thème actuel
+  const [theme, setTheme] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') || 'light';
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'data-theme') {
+          setTheme(document.documentElement.getAttribute('data-theme') || 'light');
+        }
+      });
+    });
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -98,7 +117,11 @@ function Login({ setIsAuthenticated }) {
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <h1 className="login-title">SecureAuth+</h1>
+          <img 
+            src={theme === 'dark' ? darkLogo : lightLogo} 
+            alt="SecureAuth+" 
+            className="login-logo"
+          />
           <p className="login-subtitle">
             {showTwoFactor ? 'Two-Factor Authentication' : 'Secure Access Portal'}
           </p>

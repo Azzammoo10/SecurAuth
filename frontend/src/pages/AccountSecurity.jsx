@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
-import '../styles/cybersec-theme.css';
 
 function AccountSecurity() {
   const [passwordData, setPasswordData] = useState({
@@ -23,10 +22,7 @@ function AccountSecurity() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showPasswordSection, setShowPasswordSection] = useState(true);
-  const [show2FASection, setShow2FASection] = useState(false);
-  const [showSessionsSection, setShowSessionsSection] = useState(false);
-  const [showApiKeysSection, setShowApiKeysSection] = useState(false);
+  const [activeTab, setActiveTab] = useState('password');
 
   useEffect(() => {
     loadPasswordPolicy();
@@ -184,12 +180,20 @@ function AccountSecurity() {
     setSuccess('Copied to clipboard!');
   };
 
-  const getPasswordStrengthColor = (password) => {
-    if (!password) return '#e9ecef';
+  const getPasswordStrengthLabel = (password) => {
     const strength = calculatePasswordStrength(password);
-    if (strength < 30) return '#dc3545';
-    if (strength < 60) return '#ffc107';
-    return '#1ba94c';
+    if (strength < 30) return { label: 'Faible', color: 'var(--color-danger)' };
+    if (strength < 60) return { label: 'Moyen', color: 'var(--color-warning)' };
+    if (strength < 80) return { label: 'Bon', color: 'var(--color-info)' };
+    return { label: 'Excellent', color: 'var(--color-success)' };
+  };
+
+  const getPasswordStrengthColor = (password) => {
+    if (!password) return 'var(--border-light)';
+    const strength = calculatePasswordStrength(password);
+    if (strength < 30) return 'var(--color-danger)';
+    if (strength < 60) return 'var(--color-warning)';
+    return 'var(--color-success)';
   };
 
   const calculatePasswordStrength = (password) => {
@@ -203,446 +207,490 @@ function AccountSecurity() {
     return strength;
   };
 
+  const tabs = [
+    { id: 'password', label: 'Mot de passe', icon: '🔐' },
+    { id: '2fa', label: 'Authentification 2FA', icon: '📱' },
+    { id: 'sessions', label: 'Sessions', icon: '💻', count: sessions.length },
+    { id: 'apikeys', label: 'Clés API', icon: '🔑', count: apiKeys.length }
+  ];
+
   return (
     <div className="page-container">
-      <div className="card-header" style={{ marginBottom: 'var(--space-lg)' }}>
-        <div>
-          <h1 className="page-title">Account Security</h1>
-          <p className="page-subtitle">Manage your password, 2FA, sessions, and API keys</p>
+      {/* Header avec icône de sécurité */}
+      <div className="page-header-box">
+        <div className="page-header-icon security">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div className="page-header-content">
+          <h1 className="page-title">Sécurité du compte</h1>
+          <p className="page-subtitle">Gérez vos paramètres de sécurité et protégez votre compte</p>
         </div>
       </div>
 
+      {/* Notifications */}
       {error && (
-        <div className="alert alert-error">
+        <div className="alert alert-error animate-fadeIn">
+          <span className="alert-icon">⚠️</span>
           {error}
+          <button className="alert-close" onClick={() => setError('')}>×</button>
         </div>
       )}
 
       {success && (
-        <div className="alert alert-success">
+        <div className="alert alert-success animate-fadeIn">
+          <span className="alert-icon">✓</span>
           {success}
+          <button className="alert-close" onClick={() => setSuccess('')}>×</button>
         </div>
       )}
 
-      {/* Navigation Tabs */}
-      <div className="tabs">
-        <button 
-          onClick={() => { setShowPasswordSection(true); setShow2FASection(false); setShowSessionsSection(false); setShowApiKeysSection(false); }}
-          className={`tab ${showPasswordSection ? 'active' : ''}`}
-        >
-          Password
-        </button>
-        <button 
-          onClick={() => { setShowPasswordSection(false); setShow2FASection(true); setShowSessionsSection(false); setShowApiKeysSection(false); }}
-          className={`tab ${show2FASection ? 'active' : ''}`}
-        >
-          Two-Factor Auth
-        </button>
-        <button 
-          onClick={() => { setShowPasswordSection(false); setShow2FASection(false); setShowSessionsSection(true); setShowApiKeysSection(false); }}
-          className={`tab ${showSessionsSection ? 'active' : ''}`}
-        >
-          Active Sessions
-        </button>
-        <button 
-          onClick={() => { setShowPasswordSection(false); setShow2FASection(false); setShowSessionsSection(false); setShowApiKeysSection(true); }}
-          className={`tab ${showApiKeysSection ? 'active' : ''}`}
-        >
-          API Keys
-        </button>
+      {/* Navigation par onglets améliorée */}
+      <div className="security-tabs">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`security-tab ${activeTab === tab.id ? 'active' : ''}`}
+          >
+            <span className="security-tab-icon">{tab.icon}</span>
+            <span className="security-tab-label">{tab.label}</span>
+            {tab.count !== undefined && tab.count > 0 && (
+              <span className="security-tab-badge">{tab.count}</span>
+            )}
+          </button>
+        ))}
       </div>
 
-      {/* Password Section */}
-      {showPasswordSection && (
-        <div className="card">
-          <h2 className="card-title">Change Password</h2>
+      {/* Contenu des onglets */}
+      <div className="security-content">
+        
+        {/* Section Mot de passe */}
+        {activeTab === 'password' && (
+          <div className="security-section animate-fadeIn">
+            <div className="security-card">
+              <div className="security-card-header">
+                <div className="security-card-icon password">🔐</div>
+                <div>
+                  <h2 className="security-card-title">Changer le mot de passe</h2>
+                  <p className="security-card-desc">Mettez à jour votre mot de passe régulièrement pour sécuriser votre compte</p>
+                </div>
+              </div>
 
-          {passwordPolicy && (
-            <div className="alert alert-info" style={{ marginBottom: 'var(--space-md)' }}>
-              <div className="text-sm" style={{ fontWeight: '600', marginBottom: 'var(--space-xs)' }}>Password Requirements:</div>
-              <ul style={{ margin: '0', paddingLeft: 'var(--space-lg)', fontSize: 'var(--text-sm)' }}>
-                <li>Minimum {passwordPolicy.minLength} characters</li>
-                <li>At least one uppercase letter</li>
-                <li>At least one lowercase letter</li>
-                <li>At least one number</li>
-                <li>At least one special character (!@#$%^&*etc.)</li>
-                <li>Cannot reuse last {passwordPolicy.passwordHistoryCount} passwords</li>
-              </ul>
-            </div>
-          )}
-
-          <form onSubmit={handlePasswordChange}>
-            <div className="form-group">
-              <label className="form-label">Current Password</label>
-              <input
-                type="password"
-                className="form-input"
-                value={passwordData.oldPassword}
-                onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">New Password</label>
-              <input
-                type="password"
-                className="form-input"
-                value={passwordData.newPassword}
-                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                required
-              />
-              {passwordData.newPassword && (
-                <div style={{ marginTop: 'var(--space-xs)' }}>
-                  <div className="text-sm text-muted" style={{ marginBottom: 'var(--space-xs)' }}>Password Strength</div>
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ 
-                      width: `${calculatePasswordStrength(passwordData.newPassword)}%`, 
-                      background: getPasswordStrengthColor(passwordData.newPassword)
-                    }}></div>
+              {passwordPolicy && (
+                <div className="policy-box">
+                  <div className="policy-header">
+                    <span className="policy-icon">📋</span>
+                    <span className="policy-title">Exigences du mot de passe</span>
+                  </div>
+                  <div className="policy-grid">
+                    <div className="policy-item">
+                      <span className="policy-check">✓</span>
+                      <span>Minimum {passwordPolicy.minLength} caractères</span>
+                    </div>
+                    <div className="policy-item">
+                      <span className="policy-check">✓</span>
+                      <span>Au moins une majuscule</span>
+                    </div>
+                    <div className="policy-item">
+                      <span className="policy-check">✓</span>
+                      <span>Au moins une minuscule</span>
+                    </div>
+                    <div className="policy-item">
+                      <span className="policy-check">✓</span>
+                      <span>Au moins un chiffre</span>
+                    </div>
+                    <div className="policy-item">
+                      <span className="policy-check">✓</span>
+                      <span>Au moins un caractère spécial</span>
+                    </div>
+                    <div className="policy-item">
+                      <span className="policy-check">✓</span>
+                      <span>Différent des {passwordPolicy.passwordHistoryCount} derniers</span>
+                    </div>
                   </div>
                 </div>
               )}
-            </div>
 
-            <div className="form-group">
-              <label className="form-label">Confirm New Password</label>
-              <input
-                type="password"
-                className="form-input"
-                value={passwordData.confirmPassword}
-                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                required
-              />
-            </div>
-
-            <button 
-              type="submit" 
-              className="btn btn-primary"
-              disabled={loading}
-            >
-              {loading ? 'Changing...' : 'Change Password'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* 2FA Section */}
-      {show2FASection && (
-        <div className="card">
-          <h2 className="card-title">Two-Factor Authentication</h2>
-
-          <p className="text-muted" style={{ marginBottom: 'var(--space-md)' }}>
-            Add an extra layer of security to your account by requiring a verification code from Google Authenticator.
-          </p>
-
-          {!twoFactorEnabled && !qrCode && (
-            <div>
-              <div className="alert alert-info" style={{ marginBottom: 'var(--space-md)' }}>
-                <h3 className="text-sm" style={{ fontWeight: '600', marginBottom: 'var(--space-xs)' }}>
-                  How it works:
-                </h3>
-                <ol style={{ margin: '0', paddingLeft: 'var(--space-lg)', fontSize: 'var(--text-sm)' }}>
-                  <li>Download Google Authenticator app on your phone</li>
-                  <li>Click "Enable 2FA" and scan the QR code</li>
-                  <li>Enter the 6-digit code from the app</li>
-                  <li>You'll need this code every time you log in</li>
-                </ol>
-              </div>
-              <button 
-                onClick={handleEnable2FA}
-                className="btn btn-primary"
-                disabled={loading}
-              >
-                {loading ? 'Processing...' : 'Enable 2FA'}
-              </button>
-            </div>
-          )}
-
-          {qrCode && (
-            <div>
-              <div className="alert alert-warning" style={{ marginBottom: 'var(--space-md)' }}>
-                <p className="text-sm" style={{ margin: '0' }}>
-                  <strong>Important:</strong> Open Google Authenticator and scan this QR code
-                </p>
-              </div>
-              
-              <div className="qr-code-container" style={{ 
-                textAlign: 'center', 
-                marginBottom: 'var(--space-md)', 
-                padding: 'var(--space-lg)', 
-                background: 'var(--dark-surface)', 
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--dark-border)'
-              }}>
-                <img 
-                  src={qrCode} 
-                  alt="QR Code for Google Authenticator" 
-                  style={{ 
-                    maxWidth: '250px', 
-                    border: '2px solid var(--cyber-green)', 
-                    borderRadius: 'var(--radius-md)',
-                    padding: 'var(--space-sm)',
-                    background: 'white'
-                  }} 
-                />
-                <p className="text-xs text-muted" style={{ marginTop: 'var(--space-sm)' }}>
-                  Scan this with Google Authenticator app
-                </p>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  Enter Code from Google Authenticator
-                </label>
-                <input
-                  type="text"
-                  className="form-input font-mono"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="000000"
-                  maxLength="6"
-                  style={{ fontSize: '1.25rem', letterSpacing: '0.5rem', textAlign: 'center' }}
-                />
-                <span className="form-help">
-                  Enter the 6-digit code shown in Google Authenticator
-                </span>
-              </div>
-
-              <button 
-                onClick={handleVerify2FA}
-                className="btn btn-primary"
-                disabled={loading || verificationCode.length !== 6}
-              >
-                {loading ? 'Verifying...' : 'Verify and Enable 2FA'}
-              </button>
-            </div>
-          )}
-
-          {twoFactorEnabled && (
-            <div>
-              <div className="alert alert-success" style={{ marginBottom: 'var(--space-md)' }}>
-                Two-factor authentication is enabled and linked to Google Authenticator
-              </div>
-              <p className="text-muted" style={{ marginBottom: 'var(--space-md)' }}>
-                Your account is protected with Google Authenticator. You'll need to enter a code from the app each time you log in.
-              </p>
-              <button 
-                onClick={handleDisable2FA}
-                className="btn btn-secondary"
-                disabled={loading}
-              >
-                {loading ? 'Processing...' : 'Disable 2FA'}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Sessions Section */}
-      {showSessionsSection && (
-        <div className="card">
-          <h2 className="card-title">Active Sessions</h2>
-
-          <p className="text-muted" style={{ marginBottom: 'var(--space-md)' }}>
-            Manage your active sessions. You can sign out of any session you don't recognize.
-          </p>
-
-          {sessions.length === 0 ? (
-            <div className="empty-state">
-              <p>No active sessions</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-              {sessions.map((session) => (
-                <div key={session.id} className="session-card" style={{ 
-                  padding: 'var(--space-md)', 
-                  background: session.currentSession ? 'rgba(46, 200, 102, 0.05)' : 'var(--dark-surface)',
-                  border: `1px solid ${session.currentSession ? 'var(--cyber-green)' : 'var(--dark-border)'}`, 
-                  borderRadius: 'var(--radius-md)'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ flex: 1 }}>
-                      <div className="text-sm" style={{ fontWeight: '500', marginBottom: 'var(--space-xs)' }}>
-                        {session.userAgent || 'Unknown Device'}
-                        {session.currentSession && (
-                          <span className="badge badge-success" style={{ marginLeft: 'var(--space-sm)' }}>
-                            Current
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted">
-                        IP: {session.ipAddress}
-                      </div>
-                      <div className="text-xs text-muted">
-                        Last active: {new Date(session.lastActivity).toLocaleString()}
-                      </div>
-                    </div>
-                    {!session.currentSession && (
-                      <button 
-                        onClick={() => handleInvalidateSession(session.id)}
-                        className="btn btn-sm btn-secondary"
-                      >
-                        Sign Out
-                      </button>
-                    )}
+              <form onSubmit={handlePasswordChange} className="security-form">
+                <div className="form-group">
+                  <label className="form-label">Mot de passe actuel</label>
+                  <div className="input-with-icon">
+                    <input
+                      type="password"
+                      className="form-input"
+                      value={passwordData.oldPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
+                      placeholder="Entrez votre mot de passe actuel"
+                      required
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* API Keys Section */}
-      {showApiKeysSection && (
-        <div className="card">
-          <h2 className="card-title">API Keys</h2>
+                <div className="form-group">
+                  <label className="form-label">Nouveau mot de passe</label>
+                  <input
+                    type="password"
+                    className="form-input"
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                    placeholder="Entrez un nouveau mot de passe"
+                    required
+                  />
+                  {passwordData.newPassword && (
+                    <div className="password-strength">
+                      <div className="password-strength-bar">
+                        <div 
+                          className="password-strength-fill"
+                          style={{ 
+                            width: `${calculatePasswordStrength(passwordData.newPassword)}%`,
+                            backgroundColor: getPasswordStrengthColor(passwordData.newPassword)
+                          }}
+                        />
+                      </div>
+                      <span 
+                        className="password-strength-label"
+                        style={{ color: getPasswordStrengthColor(passwordData.newPassword) }}
+                      >
+                        {getPasswordStrengthLabel(passwordData.newPassword).label}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
-          <p className="text-muted" style={{ marginBottom: 'var(--space-md)' }}>
-            API keys allow applications to access your account programmatically. Keep them secure.
-          </p>
+                <div className="form-group">
+                  <label className="form-label">Confirmer le nouveau mot de passe</label>
+                  <input
+                    type="password"
+                    className="form-input"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                    placeholder="Confirmez le nouveau mot de passe"
+                    required
+                  />
+                  {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
+                    <span className="form-error">Les mots de passe ne correspondent pas</span>
+                  )}
+                </div>
 
-          {newApiKey && (
-            <div className="alert alert-warning" style={{ marginBottom: 'var(--space-md)' }}>
-              <div className="text-sm" style={{ fontWeight: '600', marginBottom: 'var(--space-xs)' }}>
-                Your new API key (copy it now - it won't be shown again):
-              </div>
-              <div className="flex gap-1" style={{ alignItems: 'center' }}>
-                <code className="code-block" style={{ 
-                  flex: 1, 
-                  wordBreak: 'break-all'
-                }}>
-                  {newApiKey}
-                </code>
                 <button 
-                  onClick={() => copyToClipboard(newApiKey)}
-                  className="btn btn-sm btn-secondary"
+                  type="submit" 
+                  className="btn btn-primary btn-lg"
+                  disabled={loading || passwordData.newPassword !== passwordData.confirmPassword}
                 >
-                  Copy
+                  {loading ? (
+                    <>
+                      <span className="btn-spinner"></span>
+                      Mise à jour...
+                    </>
+                  ) : (
+                    'Mettre à jour le mot de passe'
+                  )}
                 </button>
-              </div>
-              <button 
-                onClick={() => setNewApiKey(null)}
-                className="btn btn-ghost btn-sm"
-                style={{ marginTop: 'var(--space-xs)' }}
-              >
-                Close
-              </button>
+              </form>
             </div>
-          )}
-
-          <div style={{ marginBottom: 'var(--space-xl)' }}>
-            <h3 className="text-md" style={{ fontWeight: '600', marginBottom: 'var(--space-md)' }}>
-              Create New API Key
-            </h3>
-            <form onSubmit={handleCreateApiKey}>
-              <div className="form-group">
-                <label className="form-label">Name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={apiKeyForm.name}
-                  onChange={(e) => setApiKeyForm({ ...apiKeyForm, name: e.target.value })}
-                  required
-                  placeholder="e.g., Production Server"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Description (optional)</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={apiKeyForm.description}
-                  onChange={(e) => setApiKeyForm({ ...apiKeyForm, description: e.target.value })}
-                  placeholder="e.g., API key for production deployment"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Expiration (days)</label>
-                <select
-                  className="form-select"
-                  value={apiKeyForm.expirationDays}
-                  onChange={(e) => setApiKeyForm({ ...apiKeyForm, expirationDays: parseInt(e.target.value) })}
-                >
-                  <option value="30">30 days</option>
-                  <option value="90">90 days</option>
-                  <option value="180">180 days</option>
-                  <option value="365">1 year</option>
-                  <option value="0">Never expires</option>
-                </select>
-              </div>
-
-              <button 
-                type="submit" 
-                className="btn btn-primary"
-                disabled={loading}
-              >
-                {loading ? 'Creating...' : 'Create API Key'}
-              </button>
-            </form>
           </div>
+        )}
 
-          <h3 className="text-md" style={{ fontWeight: '600', marginBottom: 'var(--space-md)' }}>
-            Your API Keys
-          </h3>
+        {/* Section 2FA */}
+        {activeTab === '2fa' && (
+          <div className="security-section animate-fadeIn">
+            <div className="security-card">
+              <div className="security-card-header">
+                <div className="security-card-icon twofa">📱</div>
+                <div>
+                  <h2 className="security-card-title">Authentification à deux facteurs</h2>
+                  <p className="security-card-desc">Ajoutez une couche de sécurité supplémentaire avec Google Authenticator</p>
+                </div>
+                <div className={`status-badge ${twoFactorEnabled ? 'active' : 'inactive'}`}>
+                  {twoFactorEnabled ? '✓ Activé' : '○ Désactivé'}
+                </div>
+              </div>
 
-          {apiKeys.length === 0 ? (
-            <div className="empty-state">
-              <p>No API keys created yet</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-              {apiKeys.map((apiKey) => (
-                <div key={apiKey.id} className="session-card" style={{ 
-                  padding: 'var(--space-md)', 
-                  background: apiKey.active ? 'var(--dark-surface)' : 'rgba(150, 150, 150, 0.05)',
-                  border: `1px solid ${apiKey.active ? 'var(--dark-border)' : 'var(--text-muted)'}`, 
-                  borderRadius: 'var(--radius-md)'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                    <div style={{ flex: 1 }}>
-                      <div className="text-sm" style={{ fontWeight: '600', marginBottom: 'var(--space-xs)' }}>
-                        {apiKey.name}
-                        {!apiKey.active && (
-                          <span className="badge badge-danger" style={{ marginLeft: 'var(--space-sm)' }}>
-                            Revoked
-                          </span>
-                        )}
-                      </div>
-                      {apiKey.description && (
-                        <div className="text-xs text-muted" style={{ marginBottom: 'var(--space-xs)' }}>
-                          {apiKey.description}
-                        </div>
-                      )}
-                      <div className="text-xs text-muted">
-                        <code className="code-inline">
-                          {apiKey.keyPrefix}***
-                        </code>
-                      </div>
-                      <div className="text-xs text-muted" style={{ marginTop: 'var(--space-xs)' }}>
-                        Created: {new Date(apiKey.createdAt).toLocaleDateString()}
-                        {apiKey.expiresAt && ` • Expires: ${new Date(apiKey.expiresAt).toLocaleDateString()}`}
-                        {apiKey.lastUsedAt && ` • Last used: ${new Date(apiKey.lastUsedAt).toLocaleString()}`}
+              {!twoFactorEnabled && !qrCode && (
+                <div className="twofa-setup">
+                  <div className="twofa-steps">
+                    <div className="twofa-step">
+                      <div className="step-number">1</div>
+                      <div className="step-content">
+                        <h4>Téléchargez l'application</h4>
+                        <p>Installez Google Authenticator sur votre téléphone</p>
                       </div>
                     </div>
-                    {apiKey.active && (
-                      <button 
-                        onClick={() => handleRevokeApiKey(apiKey.id)}
-                        className="btn btn-sm btn-danger"
-                      >
-                        Revoke
-                      </button>
-                    )}
+                    <div className="twofa-step">
+                      <div className="step-number">2</div>
+                      <div className="step-content">
+                        <h4>Scannez le QR code</h4>
+                        <p>Cliquez sur "Activer" et scannez le code affiché</p>
+                      </div>
+                    </div>
+                    <div className="twofa-step">
+                      <div className="step-number">3</div>
+                      <div className="step-content">
+                        <h4>Vérifiez le code</h4>
+                        <p>Entrez le code à 6 chiffres de l'application</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={handleEnable2FA}
+                    className="btn btn-primary btn-lg"
+                    disabled={loading}
+                  >
+                    {loading ? 'Traitement...' : 'Activer l\'authentification 2FA'}
+                  </button>
+                </div>
+              )}
+
+              {qrCode && (
+                <div className="twofa-verify">
+                  <div className="qr-container">
+                    <div className="qr-wrapper">
+                      <img src={qrCode} alt="QR Code" className="qr-image" />
+                    </div>
+                    <p className="qr-hint">Scannez ce code avec Google Authenticator</p>
+                  </div>
+
+                  <div className="verify-form">
+                    <label className="form-label">Code de vérification</label>
+                    <div className="code-input-wrapper">
+                      <input
+                        type="text"
+                        className="code-input"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                        placeholder="000000"
+                        maxLength="6"
+                      />
+                    </div>
+                    <p className="form-help">Entrez le code à 6 chiffres affiché dans l'application</p>
+
+                    <button 
+                      onClick={handleVerify2FA}
+                      className="btn btn-primary btn-lg"
+                      disabled={loading || verificationCode.length !== 6}
+                    >
+                      {loading ? 'Vérification...' : 'Vérifier et activer'}
+                    </button>
                   </div>
                 </div>
-              ))}
+              )}
+
+              {twoFactorEnabled && (
+                <div className="twofa-enabled">
+                  <div className="enabled-message">
+                    <span className="enabled-icon">🛡️</span>
+                    <div>
+                      <h4>Votre compte est protégé</h4>
+                      <p>L'authentification à deux facteurs est active. Vous aurez besoin de votre téléphone pour vous connecter.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={handleDisable2FA}
+                    className="btn btn-secondary"
+                    disabled={loading}
+                  >
+                    {loading ? 'Traitement...' : 'Désactiver 2FA'}
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+
+        {/* Section Sessions */}
+        {activeTab === 'sessions' && (
+          <div className="security-section animate-fadeIn">
+            <div className="security-card">
+              <div className="security-card-header">
+                <div className="security-card-icon sessions">💻</div>
+                <div>
+                  <h2 className="security-card-title">Sessions actives</h2>
+                  <p className="security-card-desc">Gérez vos appareils connectés et déconnectez les sessions suspectes</p>
+                </div>
+              </div>
+
+              {sessions.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">💻</div>
+                  <h3>Aucune session active</h3>
+                  <p>Il n'y a pas de sessions actives pour le moment</p>
+                </div>
+              ) : (
+                <div className="sessions-list">
+                  {sessions.map((session) => (
+                    <div 
+                      key={session.id} 
+                      className={`session-item ${session.currentSession ? 'current' : ''}`}
+                    >
+                      <div className="session-icon">
+                        {session.userAgent?.includes('Mobile') ? '📱' : '💻'}
+                      </div>
+                      <div className="session-info">
+                        <div className="session-device">
+                          {session.userAgent || 'Appareil inconnu'}
+                          {session.currentSession && (
+                            <span className="current-badge">Session actuelle</span>
+                          )}
+                        </div>
+                        <div className="session-details">
+                          <span>📍 {session.ipAddress}</span>
+                          <span>🕐 {new Date(session.lastActivity).toLocaleString('fr-FR')}</span>
+                        </div>
+                      </div>
+                      {!session.currentSession && (
+                        <button 
+                          onClick={() => handleInvalidateSession(session.id)}
+                          className="btn btn-sm btn-secondary"
+                        >
+                          Déconnecter
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Section API Keys */}
+        {activeTab === 'apikeys' && (
+          <div className="security-section animate-fadeIn">
+            {/* Nouvelle clé API */}
+            {newApiKey && (
+              <div className="new-api-key-banner">
+                <div className="banner-header">
+                  <span className="banner-icon">🔑</span>
+                  <span className="banner-title">Nouvelle clé API créée</span>
+                </div>
+                <div className="banner-content">
+                  <p className="banner-warning">⚠️ Copiez cette clé maintenant. Elle ne sera plus affichée.</p>
+                  <div className="key-display">
+                    <code>{newApiKey}</code>
+                    <button 
+                      onClick={() => copyToClipboard(newApiKey)}
+                      className="btn btn-sm btn-primary"
+                    >
+                      📋 Copier
+                    </button>
+                  </div>
+                </div>
+                <button onClick={() => setNewApiKey(null)} className="banner-close">×</button>
+              </div>
+            )}
+
+            <div className="security-cards-grid">
+              {/* Formulaire de création */}
+              <div className="security-card">
+                <div className="security-card-header compact">
+                  <h3 className="security-card-title">Créer une clé API</h3>
+                </div>
+                
+                <form onSubmit={handleCreateApiKey} className="security-form">
+                  <div className="form-group">
+                    <label className="form-label">Nom de la clé</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={apiKeyForm.name}
+                      onChange={(e) => setApiKeyForm({ ...apiKeyForm, name: e.target.value })}
+                      placeholder="Ex: Serveur de production"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Description (optionnel)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={apiKeyForm.description}
+                      onChange={(e) => setApiKeyForm({ ...apiKeyForm, description: e.target.value })}
+                      placeholder="Ex: Clé pour le déploiement CI/CD"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Expiration</label>
+                    <select
+                      className="form-select"
+                      value={apiKeyForm.expirationDays}
+                      onChange={(e) => setApiKeyForm({ ...apiKeyForm, expirationDays: parseInt(e.target.value) })}
+                    >
+                      <option value="30">30 jours</option>
+                      <option value="90">90 jours</option>
+                      <option value="180">180 jours</option>
+                      <option value="365">1 an</option>
+                      <option value="0">Jamais</option>
+                    </select>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary"
+                    disabled={loading}
+                  >
+                    {loading ? 'Création...' : '+ Créer la clé'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Liste des clés */}
+              <div className="security-card">
+                <div className="security-card-header compact">
+                  <h3 className="security-card-title">Vos clés API</h3>
+                  <span className="keys-count">{apiKeys.length} clé(s)</span>
+                </div>
+
+                {apiKeys.length === 0 ? (
+                  <div className="empty-state compact">
+                    <div className="empty-icon">🔑</div>
+                    <p>Aucune clé API créée</p>
+                  </div>
+                ) : (
+                  <div className="api-keys-list">
+                    {apiKeys.map((apiKey) => (
+                      <div 
+                        key={apiKey.id} 
+                        className={`api-key-item ${!apiKey.active ? 'revoked' : ''}`}
+                      >
+                        <div className="api-key-info">
+                          <div className="api-key-name">
+                            {apiKey.name}
+                            {!apiKey.active && <span className="revoked-badge">Révoquée</span>}
+                          </div>
+                          {apiKey.description && (
+                            <div className="api-key-desc">{apiKey.description}</div>
+                          )}
+                          <div className="api-key-meta">
+                            <code className="api-key-prefix">{apiKey.keyPrefix}•••</code>
+                            <span className="api-key-dates">
+                              Créée le {new Date(apiKey.createdAt).toLocaleDateString('fr-FR')}
+                              {apiKey.expiresAt && ` • Expire le ${new Date(apiKey.expiresAt).toLocaleDateString('fr-FR')}`}
+                            </span>
+                          </div>
+                        </div>
+                        {apiKey.active && (
+                          <button 
+                            onClick={() => handleRevokeApiKey(apiKey.id)}
+                            className="btn btn-sm btn-danger"
+                          >
+                            Révoquer
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
