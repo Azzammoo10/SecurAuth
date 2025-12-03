@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
-import { userAPI, auditAPI } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { userAPI, auditAPI, authAPI } from '../services/api';
 import authService from '../services/authService';
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
     recentLogs: 0,
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [userProfile, setUserProfile] = useState(null);
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const user = authService.getUser();
 
@@ -18,6 +22,22 @@ function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
+      // Charger le profil utilisateur pour tous
+      try {
+        const profileResponse = await userAPI.getMe();
+        setUserProfile(profileResponse.data.data);
+      } catch (e) {
+        console.error('Error loading profile:', e);
+      }
+
+      // Charger les sessions actives
+      try {
+        const sessionsResponse = await authAPI.get('/account/sessions');
+        setSessions(sessionsResponse.data.data || []);
+      } catch (e) {
+        console.error('Error loading sessions:', e);
+      }
+
       // Charger les utilisateurs si autorisé
       if (authService.hasAnyRole(['ADMIN', 'MANAGER'])) {
         const usersResponse = await userAPI.getAll(0, 1000);
@@ -168,24 +188,222 @@ function Dashboard() {
       )}
 
       {!authService.hasAnyRole(['ADMIN', 'MANAGER', 'SECURITY']) && (
-        <div className="content-card warning-card">
-          <div className="content-card-header">
-            <div className="content-card-title">
-              <div className="content-card-icon warning">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
+        <>
+          {/* Section Sécurité du compte */}
+          <div className="dashboard-user-grid">
+            {/* Carte 2FA */}
+            <div className="content-card security-card">
+              <div className="content-card-header">
+                <div className="content-card-title">
+                  <div className="content-card-icon" style={{ background: userProfile?.twoFactorEnabled ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                  </div>
+                  <h2>Authentification 2FA</h2>
+                </div>
+                <span className={`badge ${userProfile?.twoFactorEnabled ? 'badge-success' : 'badge-warning'}`}>
+                  {userProfile?.twoFactorEnabled ? '✓ Activé' : '⚠ Désactivé'}
+                </span>
               </div>
-              <h2>Accès limité</h2>
+              <div className="content-card-body">
+                {userProfile?.twoFactorEnabled ? (
+                  <div className="security-status-box success">
+                    <div className="security-status-icon">🛡️</div>
+                    <div>
+                      <p className="security-status-title">Votre compte est protégé</p>
+                      <p className="security-status-desc">L'authentification à deux facteurs est active sur votre compte.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="security-status-box warning">
+                    <div className="security-status-icon">⚠️</div>
+                    <div>
+                      <p className="security-status-title">Protégez votre compte</p>
+                      <p className="security-status-desc">Activez l'authentification 2FA pour renforcer la sécurité de votre compte.</p>
+                    </div>
+                  </div>
+                )}
+                <button 
+                  className={`btn ${userProfile?.twoFactorEnabled ? 'btn-secondary' : 'btn-primary'} btn-block mt-3`}
+                  onClick={() => navigate('/account/security')}
+                >
+                  {userProfile?.twoFactorEnabled ? 'Gérer la 2FA' : '🔐 Activer la 2FA maintenant'}
+                </button>
+              </div>
+            </div>
+
+            {/* Carte Mot de passe */}
+            <div className="content-card security-card">
+              <div className="content-card-header">
+                <div className="content-card-title">
+                  <div className="content-card-icon" style={{ background: user?.mustChangePassword ? 'var(--color-warning)' : 'var(--color-success)' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                  </div>
+                  <h2>Mot de passe</h2>
+                </div>
+                <span className={`badge ${user?.mustChangePassword ? 'badge-warning' : 'badge-success'}`}>
+                  {user?.mustChangePassword ? '⚠ À changer' : '✓ Sécurisé'}
+                </span>
+              </div>
+              <div className="content-card-body">
+                {user?.mustChangePassword ? (
+                  <div className="security-status-box warning">
+                    <div className="security-status-icon">🔑</div>
+                    <div>
+                      <p className="security-status-title">Changement recommandé</p>
+                      <p className="security-status-desc">Vous utilisez un mot de passe temporaire. Créez votre propre mot de passe.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="security-status-box success">
+                    <div className="security-status-icon">✅</div>
+                    <div>
+                      <p className="security-status-title">Mot de passe personnel</p>
+                      <p className="security-status-desc">Vous avez défini votre propre mot de passe sécurisé.</p>
+                    </div>
+                  </div>
+                )}
+                <button 
+                  className={`btn ${user?.mustChangePassword ? 'btn-primary' : 'btn-secondary'} btn-block mt-3`}
+                  onClick={() => navigate('/account/security')}
+                >
+                  {user?.mustChangePassword ? '🔐 Changer maintenant' : 'Modifier le mot de passe'}
+                </button>
+              </div>
+            </div>
+
+            {/* Carte Sessions */}
+            <div className="content-card security-card">
+              <div className="content-card-header">
+                <div className="content-card-title">
+                  <div className="content-card-icon" style={{ background: 'var(--color-info)' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                      <line x1="8" y1="21" x2="16" y2="21"/>
+                      <line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                  </div>
+                  <h2>Sessions actives</h2>
+                </div>
+                <span className="badge badge-info">{sessions.length} session(s)</span>
+              </div>
+              <div className="content-card-body">
+                <div className="security-status-box info">
+                  <div className="security-status-icon">💻</div>
+                  <div>
+                    <p className="security-status-title">{sessions.length} appareil(s) connecté(s)</p>
+                    <p className="security-status-desc">Gérez vos sessions actives et déconnectez les appareils non reconnus.</p>
+                  </div>
+                </div>
+                <button 
+                  className="btn btn-secondary btn-block mt-3"
+                  onClick={() => navigate('/account/security')}
+                >
+                  Gérer les sessions
+                </button>
+              </div>
             </div>
           </div>
-          <div className="content-card-body">
-            <p className="text-secondary">Votre rôle actuel ne vous donne pas accès aux fonctionnalités avancées.</p>
-            <p className="text-muted">Contactez un administrateur pour demander des permissions supplémentaires.</p>
+
+          {/* Informations du compte */}
+          <div className="content-card">
+            <div className="content-card-header">
+              <div className="content-card-title">
+                <div className="content-card-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <h2>Informations du compte</h2>
+              </div>
+            </div>
+            <div className="content-card-body">
+              <div className="profile-info-grid">
+                <div className="profile-info-item">
+                  <span className="profile-info-label">Nom d'utilisateur</span>
+                  <span className="profile-info-value font-mono">{user?.username}</span>
+                </div>
+                <div className="profile-info-item">
+                  <span className="profile-info-label">Email</span>
+                  <span className="profile-info-value">{userProfile?.email || user?.email}</span>
+                </div>
+                <div className="profile-info-item">
+                  <span className="profile-info-label">Nom complet</span>
+                  <span className="profile-info-value">{user?.firstName} {user?.lastName}</span>
+                </div>
+                <div className="profile-info-item">
+                  <span className="profile-info-label">Rôle(s)</span>
+                  <span className="profile-info-value">
+                    {user?.roles?.map(role => (
+                      <span key={role} className="badge badge-info mr-1">{role}</span>
+                    ))}
+                  </span>
+                </div>
+                <div className="profile-info-item">
+                  <span className="profile-info-label">Compte créé le</span>
+                  <span className="profile-info-value">{userProfile?.createdAt ? new Date(userProfile.createdAt).toLocaleDateString('fr-FR') : '-'}</span>
+                </div>
+                <div className="profile-info-item">
+                  <span className="profile-info-label">Dernière connexion</span>
+                  <span className="profile-info-value">{userProfile?.lastLoginAt ? new Date(userProfile.lastLoginAt).toLocaleString('fr-FR') : '-'}</span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+
+          {/* Conseils de sécurité */}
+          <div className="content-card tips-card">
+            <div className="content-card-header">
+              <div className="content-card-title">
+                <div className="content-card-icon" style={{ background: 'var(--cyber-green)' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                </div>
+                <h2>Conseils de sécurité</h2>
+              </div>
+            </div>
+            <div className="content-card-body">
+              <div className="tips-grid">
+                <div className="tip-item">
+                  <span className="tip-icon">🔐</span>
+                  <div>
+                    <p className="tip-title">Activez la 2FA</p>
+                    <p className="tip-desc">Ajoutez une couche de sécurité supplémentaire avec Google Authenticator.</p>
+                  </div>
+                </div>
+                <div className="tip-item">
+                  <span className="tip-icon">🔑</span>
+                  <div>
+                    <p className="tip-title">Mot de passe fort</p>
+                    <p className="tip-desc">Utilisez un mot de passe unique avec des caractères spéciaux.</p>
+                  </div>
+                </div>
+                <div className="tip-item">
+                  <span className="tip-icon">👀</span>
+                  <div>
+                    <p className="tip-title">Surveillez vos sessions</p>
+                    <p className="tip-desc">Vérifiez régulièrement les appareils connectés à votre compte.</p>
+                  </div>
+                </div>
+                <div className="tip-item">
+                  <span className="tip-icon">🚪</span>
+                  <div>
+                    <p className="tip-title">Déconnectez-vous</p>
+                    <p className="tip-desc">Toujours vous déconnecter sur les appareils partagés.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

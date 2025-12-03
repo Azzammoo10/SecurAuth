@@ -99,6 +99,22 @@ function Users() {
     }
   };
 
+  const handleResetPassword = async (id, username) => {
+    if (!window.confirm(`Réinitialiser le mot de passe de ${username} ?`)) return;
+    
+    try {
+      const response = await userAPI.resetPassword(id);
+      const newPassword = response.data.data.temporaryPassword;
+      setMessage({ 
+        type: 'success', 
+        text: `Mot de passe réinitialisé pour ${username}. Nouveau mot de passe: ${newPassword}` 
+      });
+      loadUsers();
+    } catch (error) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de la réinitialisation' });
+    }
+  };
+
   const handleUnlock = async (id) => {
     try {
       await userAPI.unlock(id);
@@ -260,6 +276,13 @@ function Users() {
                           Unlock
                         </button>
                       )}
+                      <button 
+                        onClick={() => handleResetPassword(user.id, user.username)} 
+                        className="btn btn-warning btn-sm"
+                        title="Reset password"
+                      >
+                        🔑 Reset
+                      </button>
                       <button 
                         onClick={() => handleDeleteUser(user.id)} 
                         className="btn btn-danger btn-sm"

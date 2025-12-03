@@ -77,6 +77,7 @@ export const userAPI = {
   delete: (id) => api.delete(`/users/${id}`),
   toggleStatus: (id) => api.patch(`/users/${id}/toggle-status`),
   unlock: (id) => api.patch(`/users/${id}/unlock`),
+  resetPassword: (id) => api.post(`/users/${id}/reset-password`),
   changePassword: (passwordData) => api.post('/users/change-password', passwordData),
 };
 

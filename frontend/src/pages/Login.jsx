@@ -5,7 +5,7 @@ import authService from '../services/authService';
 import lightLogo from '../images/light_theme.png';
 import darkLogo from '../images/dark_theme.png';
 
-function Login({ setIsAuthenticated }) {
+function Login({ setIsAuthenticated, setMustChangePassword }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
@@ -78,7 +78,15 @@ function Login({ setIsAuthenticated }) {
       authService.setUser(user);
       localStorage.setItem('username', formData.username);
       setIsAuthenticated(true);
-      navigate('/dashboard');
+      
+      // Vérifier si l'utilisateur doit changer son mot de passe
+      if (user.mustChangePassword) {
+        setMustChangePassword && setMustChangePassword(true);
+        navigate('/change-password');
+      } else {
+        setMustChangePassword && setMustChangePassword(false);
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(
         err.response?.data?.message || 
@@ -102,7 +110,15 @@ function Login({ setIsAuthenticated }) {
       authService.setUser(user);
       localStorage.setItem('username', formData.username);
       setIsAuthenticated(true);
-      navigate('/dashboard');
+      
+      // Vérifier si l'utilisateur doit changer son mot de passe
+      if (user.mustChangePassword) {
+        setMustChangePassword && setMustChangePassword(true);
+        navigate('/change-password');
+      } else {
+        setMustChangePassword && setMustChangePassword(false);
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(
         err.response?.data?.message || 

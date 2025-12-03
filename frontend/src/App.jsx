@@ -9,30 +9,43 @@ import AuditLogs from './pages/AuditLogs';
 import Registrations from './pages/Registrations';
 import Register from './pages/Register';
 import AccountSecurity from './pages/AccountSecurity';
+import ForceChangePassword from './pages/ForceChangePassword';
 import Navbar from './components/Navbar';
 import './App.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(authService.isAuthenticated());
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   useEffect(() => {
     setIsAuthenticated(authService.isAuthenticated());
+    const user = authService.getUser();
+    setMustChangePassword(user?.mustChangePassword || false);
   }, []);
 
   const ProtectedRoute = ({ children }) => {
-    return isAuthenticated ? children : <Navigate to="/login" />;
+    if (!isAuthenticated) {
+      return <Navigate to="/login" />;
+    }
+    return children;
   };
 
   return (
     <Router>
       <div className="app">
-        {isAuthenticated && <Navbar setIsAuthenticated={setIsAuthenticated} />}
+        {isAuthenticated && !mustChangePassword && <Navbar setIsAuthenticated={setIsAuthenticated} />}
         <Routes>
           <Route path="/register" element={<Register />} />
           <Route 
             path="/login" 
             element={
-              isAuthenticated ? <Navigate to="/dashboard" /> : <Login setIsAuthenticated={setIsAuthenticated} />
+              isAuthenticated ? <Navigate to="/dashboard" /> : <Login setIsAuthenticated={setIsAuthenticated} setMustChangePassword={setMustChangePassword} />
+            } 
+          />
+          <Route 
+            path="/change-password" 
+            element={
+              isAuthenticated ? <ForceChangePassword /> : <Navigate to="/login" />
             } 
           />
           <Route
