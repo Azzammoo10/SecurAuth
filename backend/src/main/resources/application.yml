@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: secureauth-backend
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/secureauth
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+
+# JWT Configuration
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  expiration: 3600000        # 1 heure en ms
+  refresh-expiration: 86400000  # 24 heures en ms
+
+# Security Configuration
+security:
+  max-login-attempts: 3
+  account-lock-duration: 900000  # 15 minutes en ms
+
+# Server Configuration
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# OpenAPI/Swagger
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+# Logging
+logging:
+  level:
+    com.secureauth: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
