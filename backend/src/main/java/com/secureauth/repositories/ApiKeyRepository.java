@@ -1,6 +1,7 @@
 package com.secureauth.repositories;
 
 import com.secureauth.entities.ApiKey;
+import com.secureauth.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -20,4 +21,6 @@ public interface ApiKeyRepository extends JpaRepository<ApiKey, Long> {
     List<ApiKey> findByExpiresAtBeforeAndActiveTrue(LocalDateTime dateTime);
     
     boolean existsByKeyHash(String keyHash);
+    
+    void deleteByUser(User user);
 }

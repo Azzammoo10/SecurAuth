@@ -180,6 +180,8 @@ public class SecurityService {
                 .phoneNumber(user.getPhoneNumber())
                 .enabled(user.getEnabled())
                 .accountNonLocked(user.getAccountNonLocked())
+                .mustChangePassword(user.getMustChangePassword())
+                .twoFactorEnabled(user.getTwoFactorEnabled())
                 .roles(user.getRoles().stream()
                         .map(role -> role.getName())
                         .collect(Collectors.toSet()))

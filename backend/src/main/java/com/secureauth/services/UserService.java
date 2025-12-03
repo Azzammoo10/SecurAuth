@@ -7,8 +7,11 @@ import com.secureauth.entities.User;
 import com.secureauth.exceptions.InvalidOperationException;
 import com.secureauth.exceptions.ResourceAlreadyExistsException;
 import com.secureauth.exceptions.ResourceNotFoundException;
+import com.secureauth.repositories.RefreshTokenRepository;
 import com.secureauth.repositories.RoleRepository;
 import com.secureauth.repositories.UserRepository;
+import com.secureauth.repositories.UserSessionRepository;
+import com.secureauth.repositories.ApiKeyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,6 +39,9 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final UserSessionRepository userSessionRepository;
+    private final ApiKeyRepository apiKeyRepository;
 
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%";
     private static final int PASSWORD_LENGTH = 12;
@@ -199,6 +205,13 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
 
         String username = user.getUsername();
+        
+        // Supprimer d'abord toutes les données liées à l'utilisateur
+        refreshTokenRepository.deleteByUser(user);
+        userSessionRepository.deleteByUser(user);
+        apiKeyRepository.deleteByUser(user);
+        
+        // Supprimer l'utilisateur
         userRepository.delete(user);
 
         auditService.logSuccess(adminUsername, AuditLog.Action.USER_DELETED, 
@@ -473,6 +486,8 @@ public class UserService {
                 .phoneNumber(user.getPhoneNumber())
                 .enabled(user.getEnabled())
                 .accountNonLocked(user.getAccountNonLocked())
+                .mustChangePassword(user.getMustChangePassword())
+                .twoFactorEnabled(user.getTwoFactorEnabled())
                 .roles(user.getRoles().stream()
                         .map(Role::getName)
                         .collect(Collectors.toSet()))

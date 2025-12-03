@@ -41,6 +41,7 @@ public class RegistrationService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+    private final EmailService emailService;
 
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%";
     private static final int PASSWORD_LENGTH = 12;
@@ -160,6 +161,21 @@ public class RegistrationService {
         request.setAdminComment(adminComment);
         registrationRequestRepository.save(request);
 
+        // Envoi de l'email de bienvenue avec les identifiants
+        try {
+            emailService.sendWelcomeEmail(
+                    request.getEmail(),
+                    request.getFirstName(),
+                    request.getLastName(),
+                    username,
+                    temporaryPassword
+            );
+            log.info("Welcome email sent to: {}", request.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send welcome email to: {} - Error: {}", request.getEmail(), e.getMessage());
+            // On ne fait pas échouer l'approbation si l'email échoue
+        }
+
         // Audit
         auditService.logSuccess(adminUsername, AuditLog.Action.REGISTRATION_APPROVED, 
                 "Demande approuvée pour: " + request.getEmail());
@@ -169,7 +185,7 @@ public class RegistrationService {
         return CreateUserResponse.builder()
                 .user(mapToUserResponse(user))
                 .temporaryPassword(temporaryPassword)
-                .message("Demande d'inscription approuvée. Utilisateur créé avec succès.")
+                .message("Demande d'inscription approuvée. Utilisateur créé avec succès. Email envoyé.")
                 .build();
     }
 
@@ -190,6 +206,20 @@ public class RegistrationService {
         request.setProcessedBy(adminUsername);
         request.setAdminComment(adminComment);
         request = registrationRequestRepository.save(request);
+
+        // Envoi de l'email de notification de rejet
+        try {
+            emailService.sendRejectionEmail(
+                    request.getEmail(),
+                    request.getFirstName(),
+                    request.getLastName(),
+                    adminComment
+            );
+            log.info("Rejection email sent to: {}", request.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send rejection email to: {} - Error: {}", request.getEmail(), e.getMessage());
+            // On ne fait pas échouer le rejet si l'email échoue
+        }
 
         // Audit
         auditService.logSuccess(adminUsername, AuditLog.Action.REGISTRATION_REJECTED, 
@@ -262,6 +292,8 @@ public class RegistrationService {
                 .phoneNumber(user.getPhoneNumber())
                 .enabled(user.getEnabled())
                 .accountNonLocked(user.getAccountNonLocked())
+                .mustChangePassword(user.getMustChangePassword())
+                .twoFactorEnabled(user.getTwoFactorEnabled())
                 .roles(user.getRoles().stream()
                         .map(Role::getName)
                         .collect(Collectors.toSet()))

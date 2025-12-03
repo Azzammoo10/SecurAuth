@@ -262,6 +262,7 @@ public class AuthenticationService {
                 .phoneNumber(user.getPhoneNumber())
                 .enabled(user.getEnabled())
                 .accountNonLocked(user.getAccountNonLocked())
+                .mustChangePassword(user.getMustChangePassword())
                 .roles(user.getRoles().stream()
                         .map(role -> role.getName())
                         .collect(Collectors.toSet()))

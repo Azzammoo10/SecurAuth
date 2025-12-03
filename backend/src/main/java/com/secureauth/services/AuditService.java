@@ -144,17 +144,52 @@ public class AuditService {
             return "Unknown";
         }
         
+        String ip = null;
+        
+        // Check X-Forwarded-For header (when behind proxy/load balancer)
         String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
+        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
+            ip = xForwardedFor.split(",")[0].trim();
         }
         
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
+        // Check X-Real-IP header
+        if (ip == null || ip.isEmpty()) {
+            String xRealIp = request.getHeader("X-Real-IP");
+            if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
+                ip = xRealIp;
+            }
         }
         
-        return request.getRemoteAddr();
+        // Check other common proxy headers
+        if (ip == null || ip.isEmpty()) {
+            String[] headers = {
+                "Proxy-Client-IP",
+                "WL-Proxy-Client-IP",
+                "HTTP_CLIENT_IP",
+                "HTTP_X_FORWARDED_FOR"
+            };
+            for (String header : headers) {
+                String value = request.getHeader(header);
+                if (value != null && !value.isEmpty() && !"unknown".equalsIgnoreCase(value)) {
+                    ip = value;
+                    break;
+                }
+            }
+        }
+        
+        // Fallback to remote address
+        if (ip == null || ip.isEmpty()) {
+            ip = request.getRemoteAddr();
+        }
+        
+        // Convert IPv6 localhost to IPv4 for readability
+        if (ip != null) {
+            if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
+                ip = "127.0.0.1";
+            }
+        }
+        
+        return ip != null ? ip : "Unknown";
     }
 
     /**

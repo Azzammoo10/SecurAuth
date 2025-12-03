@@ -25,6 +25,8 @@ public class UserResponse {
     private String phoneNumber;
     private Boolean enabled;
     private Boolean accountNonLocked;
+    private Boolean mustChangePassword;
+    private Boolean twoFactorEnabled;
     private Set<String> roles;
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
