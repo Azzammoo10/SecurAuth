@@ -27,6 +27,7 @@ logs/
 .env.local
 .env.production
 backend/.env
+**/application-dev.yml
 
 # Database
 *.db
