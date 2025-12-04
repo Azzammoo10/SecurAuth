@@ -73,8 +73,8 @@ function Login({ setIsAuthenticated, setMustChangePassword }) {
       }
 
       // Sinon, connexion normale
-      const { accessToken, refreshToken, user } = responseData;
-      authService.setTokens(accessToken, refreshToken);
+      const { accessToken, refreshToken, user, sessionToken } = responseData;
+      authService.setTokens(accessToken, refreshToken, sessionToken);
       authService.setUser(user);
       localStorage.setItem('username', formData.username);
       setIsAuthenticated(true);
@@ -104,9 +104,9 @@ function Login({ setIsAuthenticated, setMustChangePassword }) {
 
     try {
       const response = await authAPI.post('/auth/verify-2fa', twoFactorData);
-      const { accessToken, refreshToken, user } = response.data.data;
+      const { accessToken, refreshToken, user, sessionToken } = response.data.data;
 
-      authService.setTokens(accessToken, refreshToken);
+      authService.setTokens(accessToken, refreshToken, sessionToken);
       authService.setUser(user);
       localStorage.setItem('username', formData.username);
       setIsAuthenticated(true);

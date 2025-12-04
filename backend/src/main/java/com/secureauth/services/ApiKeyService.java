@@ -137,7 +137,7 @@ public class ApiKeyService {
     public User getUserByApiKey(String apiKey) {
         String keyHash = hashApiKey(apiKey);
 
-        return apiKeyRepository.findByKeyHash(keyHash)
+        return apiKeyRepository.findByKeyHashWithUser(keyHash)
                 .filter(key -> key.getActive() && !key.isExpired())
                 .map(ApiKey::getUser)
                 .orElse(null);

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
+import authService from '../services/authService';
 
 function AccountSecurity() {
+  const navigate = useNavigate();
   const [passwordData, setPasswordData] = useState({
     oldPassword: '',
     newPassword: '',
@@ -132,13 +135,35 @@ function AccountSecurity() {
     }
   };
 
-  const handleInvalidateSession = async (sessionId) => {
+  const handleInvalidateSession = async (sessionId, isCurrentSession = false) => {
     try {
       await authAPI.delete(`/account/sessions/${sessionId}`);
-      setSuccess('Session invalidated');
+      
+      // Si c'est la session actuelle, déconnecter l'utilisateur
+      if (isCurrentSession) {
+        authService.logout();
+        navigate('/login');
+        return;
+      }
+      
+      setSuccess('Session déconnectée avec succès');
       loadSessions();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to invalidate session');
+      setError(err.response?.data?.message || 'Échec de la déconnexion de la session');
+    }
+  };
+
+  const handleInvalidateAllSessions = async () => {
+    if (!confirm('Voulez-vous vraiment déconnecter toutes les autres sessions ?')) {
+      return;
+    }
+    
+    try {
+      await authAPI.delete('/account/sessions');
+      setSuccess('Toutes les autres sessions ont été déconnectées');
+      loadSessions();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Échec de la déconnexion des sessions');
     }
   };
 
@@ -520,38 +545,60 @@ function AccountSecurity() {
                   <p>Il n'y a pas de sessions actives pour le moment</p>
                 </div>
               ) : (
-                <div className="sessions-list">
-                  {sessions.map((session) => (
-                    <div 
-                      key={session.id} 
-                      className={`session-item ${session.currentSession ? 'current' : ''}`}
-                    >
-                      <div className="session-icon">
-                        {session.userAgent?.includes('Mobile') ? '📱' : '💻'}
-                      </div>
-                      <div className="session-info">
-                        <div className="session-device">
-                          {session.userAgent || 'Appareil inconnu'}
-                          {session.currentSession && (
-                            <span className="current-badge">Session actuelle</span>
-                          )}
-                        </div>
-                        <div className="session-details">
-                          <span>📍 {session.ipAddress}</span>
-                          <span>🕐 {new Date(session.lastActivity).toLocaleString('fr-FR')}</span>
-                        </div>
-                      </div>
-                      {!session.currentSession && (
-                        <button 
-                          onClick={() => handleInvalidateSession(session.id)}
-                          className="btn btn-sm btn-secondary"
-                        >
-                          Déconnecter
-                        </button>
-                      )}
+                <>
+                  {sessions.length > 1 && (
+                    <div className="sessions-actions">
+                      <button 
+                        onClick={handleInvalidateAllSessions}
+                        className="btn btn-secondary"
+                      >
+                        🚪 Déconnecter toutes les autres sessions
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  )}
+                  <div className="sessions-list">
+                    {sessions.map((session) => {
+                      // Déterminer l'icône basée sur le userAgent parsé
+                      const getDeviceIcon = (ua) => {
+                        if (!ua) return '💻';
+                        const lowerUA = ua.toLowerCase();
+                        if (lowerUA.includes('mobile') || lowerUA.includes('iphone') || lowerUA.includes('android')) return '📱';
+                        if (lowerUA.includes('tablette') || lowerUA.includes('ipad')) return '📱';
+                        if (lowerUA.includes('postman') || lowerUA.includes('curl') || lowerUA.includes('node')) return '🔧';
+                        return '💻';
+                      };
+                      
+                      return (
+                        <div 
+                          key={session.id} 
+                          className={`session-item ${session.currentSession ? 'current' : ''}`}
+                        >
+                          <div className="session-icon">
+                            {getDeviceIcon(session.userAgent)}
+                          </div>
+                          <div className="session-info">
+                            <div className="session-device">
+                              {session.userAgent || 'Appareil inconnu'}
+                              {session.currentSession && (
+                                <span className="current-badge">Session actuelle</span>
+                              )}
+                            </div>
+                            <div className="session-details">
+                              <span>📍 {session.ipAddress}</span>
+                              <span>🕐 {new Date(session.lastActivity).toLocaleString('fr-FR')}</span>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => handleInvalidateSession(session.id, session.currentSession)}
+                            className={`btn btn-sm ${session.currentSession ? 'btn-danger' : 'btn-secondary'}`}
+                          >
+                            {session.currentSession ? '🚪 Me déconnecter' : 'Déconnecter'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </div>
           </div>

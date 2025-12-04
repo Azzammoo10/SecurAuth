@@ -3,6 +3,7 @@ package com.secureauth.services;
 import com.secureauth.dto.AuditLogResponse;
 import com.secureauth.entities.AuditLog;
 import com.secureauth.repositories.AuditLogRepository;
+import com.secureauth.utils.NetworkUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +42,7 @@ public class AuditService {
                     .action(action)
                     .details(details)
                     .success(success)
-                    .ipAddress(getClientIpAddress(request))
+                    .ipAddress(request != null ? NetworkUtils.getClientIpAddress(request) : "Unknown")
                     .userAgent(request != null ? request.getHeader("User-Agent") : null)
                     .build();
             
@@ -70,7 +71,7 @@ public class AuditService {
                 .action(action)
                 .success(false)
                 .errorMessage(errorMessage)
-                .ipAddress(getClientIpAddress(request))
+                .ipAddress(request != null ? NetworkUtils.getClientIpAddress(request) : "Unknown")
                 .userAgent(request != null ? request.getHeader("User-Agent") : null)
                 .build();
         
@@ -134,27 +135,6 @@ public class AuditService {
         ServletRequestAttributes attributes = 
                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         return attributes != null ? attributes.getRequest() : null;
-    }
-
-    /**
-     * Extrait l'adresse IP du client
-     */
-    private String getClientIpAddress(HttpServletRequest request) {
-        if (request == null) {
-            return "Unknown";
-        }
-        
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-        
-        return request.getRemoteAddr();
     }
 
     /**

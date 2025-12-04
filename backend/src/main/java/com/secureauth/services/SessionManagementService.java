@@ -7,6 +7,7 @@ import com.secureauth.exceptions.BadRequestException;
 import com.secureauth.exceptions.ResourceNotFoundException;
 import com.secureauth.repositories.UserRepository;
 import com.secureauth.repositories.UserSessionRepository;
+import com.secureauth.utils.NetworkUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -125,7 +126,7 @@ public class SessionManagementService {
                         .id(session.getId())
                         .username(user.getUsername())
                         .ipAddress(session.getIpAddress())
-                        .userAgent(session.getUserAgent())
+                        .userAgent(NetworkUtils.parseUserAgent(session.getUserAgent()))
                         .loginTime(session.getLoginTime())
                         .lastActivity(session.getLastActivity())
                         .active(session.getActive())
