@@ -98,7 +98,7 @@ function App() {
             path="/account/security"
             element={
               <ProtectedRoute>
-                <AccountSecurity />
+                <AccountSecurity setIsAuthenticated={setIsAuthenticated} />
               </ProtectedRoute>
             }
           />

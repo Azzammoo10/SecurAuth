@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
+import authService from '../services/authService';
 import { useToast } from '../components/Toast';
+import usePageTitle from '../hooks/usePageTitle';
 
-function AccountSecurity() {
+function AccountSecurity({ setIsAuthenticated }) {
+  usePageTitle('Sécurité du compte');
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Lire le paramètre de section depuis l'URL
   const getInitialTab = () => {
@@ -67,7 +71,8 @@ function AccountSecurity() {
   const load2FAStatus = async () => {
     try {
       const response = await authAPI.get('/account/2fa/status');
-      setTwoFactorEnabled(response.data.data);
+      console.log('2FA status response:', response.data);
+      setTwoFactorEnabled(response.data.data === true);
     } catch (err) {
       console.error('Failed to load 2FA status:', err);
     }
@@ -85,9 +90,12 @@ function AccountSecurity() {
   const loadSessions = async () => {
     try {
       const response = await authAPI.get('/account/sessions');
-      setSessions(response.data.data);
+      console.log('Sessions loaded:', response.data.data);
+      console.log('Session token in localStorage:', localStorage.getItem('sessionToken'));
+      setSessions(response.data.data || []);
     } catch (err) {
       console.error('Failed to load sessions:', err);
+      setSessions([]);
     }
   };
 
@@ -198,15 +206,27 @@ function AccountSecurity() {
   };
 
   const handleInvalidateSession = async (sessionId, isCurrentSession = false) => {
+    // Si c'est la session actuelle, on déconnecte directement sans appeler l'API
+    // car l'API invaliderait notre propre token et retournerait une erreur
+    if (isCurrentSession) {
+      try {
+        // Tenter d'invalider la session côté serveur d'abord
+        await authAPI.delete(`/account/sessions/${sessionId}`);
+      } catch (err) {
+        // Ignorer les erreurs - on va se déconnecter de toute façon
+        console.log('Session invalidation during logout:', err);
+      }
+      // Déconnecter l'utilisateur localement et rediriger avec un message
+      authService.logout();
+      if (setIsAuthenticated) {
+        setIsAuthenticated(false);
+      }
+      navigate('/login?logout=session');
+      return;
+    }
+    
     try {
       await authAPI.delete(`/account/sessions/${sessionId}`);
-      
-      // Si c'est la session actuelle, déconnecter l'utilisateur
-      if (isCurrentSession) {
-        authService.logout();
-        navigate('/login');
-        return;
-      }
       
       toast.success('La session a été déconnectée', {
         title: '🔌 Session terminée',
@@ -785,25 +805,81 @@ function AccountSecurity() {
                 </div>
               ) : (
                 <>
-                  {sessions.length > 1 && (
-                    <div className="sessions-actions">
-                      <button 
-                        onClick={handleInvalidateAllSessions}
-                        className="btn btn-secondary"
-                      >
-                        🚪 Déconnecter toutes les autres sessions
-                      </button>
+                  {/* Sessions Overview Panel */}
+                  <div className="sessions-overview-panel">
+                    <div className="sessions-overview-header">
+                      <div className="sessions-overview-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                          <path d="M9 12l2 2 4-4"/>
+                        </svg>
+                      </div>
+                      <div className="sessions-overview-content">
+                        <h3>Centre de Surveillance des Sessions</h3>
+                        <p>Gardez le contrôle total sur vos connexions actives</p>
+                      </div>
                     </div>
-                  )}
-                  <div className="sessions-info-box">
-                    <div className="info-box-icon">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="16" x2="12" y2="12"/>
-                        <line x1="12" y1="8" x2="12.01" y2="8"/>
-                      </svg>
+                    
+                    <div className="sessions-stats-grid">
+                      <div className="session-stat-card">
+                        <div className="stat-icon active">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                          </svg>
+                        </div>
+                        <div className="stat-info">
+                          <span className="stat-value">{sessions.length}</span>
+                          <span className="stat-label">Session{sessions.length > 1 ? 's' : ''} active{sessions.length > 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="session-stat-card">
+                        <div className="stat-icon current">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                          </svg>
+                        </div>
+                        <div className="stat-info">
+                          <span className="stat-value">1</span>
+                          <span className="stat-label">Session actuelle</span>
+                        </div>
+                      </div>
+                      
+                      <div className="session-stat-card">
+                        <div className="stat-icon others">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                        </div>
+                        <div className="stat-info">
+                          <span className="stat-value">{sessions.length - 1}</span>
+                          <span className="stat-label">Autre{sessions.length - 1 !== 1 ? 's' : ''} appareil{sessions.length - 1 !== 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
                     </div>
-                    <p>Surveillez les sessions actives sur votre compte. Si vous repérez une activité suspecte, déconnectez immédiatement cette session.</p>
+                    
+                    {sessions.length > 1 && (
+                      <div className="sessions-bulk-action">
+                        <button 
+                          onClick={handleInvalidateAllSessions}
+                          className="btn-disconnect-all"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                          </svg>
+                          <span>Déconnecter toutes les autres sessions</span>
+                          <span className="disconnect-count">{sessions.length - 1}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="sessions-list">

@@ -142,8 +142,14 @@ public class TwoFactorAuthenticationService {
     }
 
     public boolean is2FARequired(String username) {
-        return userRepository.findByUsername(username)
-                .map(User::getTwoFactorEnabled)
-                .orElse(false);
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) {
+            log.debug("User not found for 2FA check: {}", username);
+            return false;
+        }
+        Boolean enabled = user.getTwoFactorEnabled();
+        log.debug("2FA status for user {}: twoFactorEnabled={}, twoFactorSecret={}", 
+                username, enabled, user.getTwoFactorSecret() != null ? "SET" : "NULL");
+        return enabled != null && enabled;
     }
 }

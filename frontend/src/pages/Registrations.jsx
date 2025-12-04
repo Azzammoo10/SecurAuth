@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { registrationAPI } from '../services/api';
 import { useToast } from '../components/Toast';
+import PasswordModal from '../components/PasswordModal';
+import usePageTitle from '../hooks/usePageTitle';
 
 function Registrations() {
+  usePageTitle('Demandes d\'inscription');
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // 'all' or 'pending'
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [comment, setComment] = useState('');
+  const [passwordModalData, setPasswordModalData] = useState({ isOpen: false, password: '', username: '' });
   const toast = useToast();
 
   useEffect(() => {
@@ -34,12 +38,16 @@ function Registrations() {
   const handleApprove = async () => {
     try {
       const response = await registrationAPI.approve(selectedRequest.id, comment);
-      toast.success(`La demande de ${selectedRequest.firstName} ${selectedRequest.lastName} a été approuvée`, {
-        title: '✅ Demande approuvée',
-        icon: 'user',
-        details: `Mot de passe temporaire : ${response.data.data.temporaryPassword}`,
-        duration: 15000
+      const tempPassword = response.data.data.temporaryPassword;
+      const username = response.data.data.username;
+      
+      // Afficher le modal avec le mot de passe
+      setPasswordModalData({
+        isOpen: true,
+        password: tempPassword,
+        username: username
       });
+      
       setShowModal(false);
       setComment('');
       loadRequests();
@@ -161,13 +169,13 @@ function Registrations() {
               <p>Aucune demande {filter === 'pending' ? 'en attente ' : ''}trouvée.</p>
             </div>
           ) : (
-          <table className="table table-striped">
+          <table className="table table-striped table-responsive">
             <thead>
               <tr>
-                <th>DATE</th>
+                <th className="hide-mobile">DATE</th>
                 <th>NOM COMPLET</th>
-                <th>EMAIL</th>
-                <th>ENTREPRISE</th>
+                <th className="hide-tablet">EMAIL</th>
+                <th className="hide-mobile">ENTREPRISE</th>
                 <th>STATUT</th>
                 <th>ACTIONS</th>
               </tr>
@@ -175,7 +183,7 @@ function Registrations() {
             <tbody>
               {requests.map((request) => (
                 <tr key={request.id}>
-                  <td className="font-mono text-sm">
+                  <td className="font-mono text-sm hide-mobile">
                     {new Date(request.requestedAt).toLocaleDateString('fr-FR')}
                   </td>
                   <td>
@@ -183,8 +191,8 @@ function Registrations() {
                       {request.firstName} {request.lastName}
                     </span>
                   </td>
-                  <td className="text-muted">{request.email}</td>
-                  <td>{request.companyName}</td>
+                  <td className="text-muted hide-tablet">{request.email}</td>
+                  <td className="hide-mobile">{request.companyName}</td>
                   <td>{getStatusBadge(request.status)}</td>
                   <td>
                     <button
@@ -625,6 +633,15 @@ function Registrations() {
           </div>
         </div>
       )}
+
+      {/* Modal Mot de passe temporaire */}
+      <PasswordModal
+        isOpen={passwordModalData.isOpen}
+        onClose={() => setPasswordModalData({ ...passwordModalData, isOpen: false })}
+        password={passwordModalData.password}
+        username={passwordModalData.username}
+        type="create"
+      />
     </div>
   );
 }

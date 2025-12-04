@@ -2,14 +2,19 @@ import { useState, useEffect } from 'react';
 import { userAPI, roleAPI } from '../services/api';
 import authService from '../services/authService';
 import { useToast } from '../components/Toast';
+import PasswordModal from '../components/PasswordModal';
+import cacheService, { CACHE_KEYS } from '../services/cacheService';
+import usePageTitle from '../hooks/usePageTitle';
 
 function Users() {
+  usePageTitle('Utilisateurs');
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
   const [selectedUser, setSelectedUser] = useState(null);
+  const [passwordModalData, setPasswordModalData] = useState({ isOpen: false, password: '', username: '', type: 'create' });
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -36,8 +41,19 @@ function Users() {
     loadRoles();
   }, []);
 
-  const loadUsers = async () => {
+  const loadUsers = async (forceRefresh = false) => {
     try {
+      // Vérifier le cache d'abord
+      const cacheKey = isManager ? `${CACHE_KEYS.USERS}_manager` : CACHE_KEYS.USERS;
+      if (!forceRefresh) {
+        const cachedUsers = cacheService.get(cacheKey);
+        if (cachedUsers) {
+          setUsers(cachedUsers);
+          setLoading(false);
+          return;
+        }
+      }
+
       const response = await userAPI.getAll(0, 100);
       let usersList = response.data.data.content;
       
@@ -51,6 +67,8 @@ function Users() {
         });
       }
       
+      // Mettre en cache
+      cacheService.set(cacheKey, usersList);
       setUsers(usersList);
     } catch (error) {
       toast.error('Erreur lors du chargement des utilisateurs', {
@@ -62,10 +80,21 @@ function Users() {
     }
   };
 
-  const loadRoles = async () => {
+  const loadRoles = async (forceRefresh = false) => {
     try {
+      // Vérifier le cache d'abord
+      if (!forceRefresh) {
+        const cachedRoles = cacheService.get(CACHE_KEYS.ROLES);
+        if (cachedRoles) {
+          setRoles(cachedRoles);
+          return;
+        }
+      }
+
       const response = await roleAPI.getAll();
-      setRoles(response.data.data);
+      const rolesData = response.data.data;
+      cacheService.set(CACHE_KEYS.ROLES, rolesData);
+      setRoles(rolesData);
     } catch (error) {
       console.error('Error loading roles:', error);
     }
@@ -75,15 +104,23 @@ function Users() {
     e.preventDefault();
     try {
       const response = await userAPI.create(formData);
-      toast.success(`Utilisateur ${formData.firstName} ${formData.lastName} créé avec succès !`, {
-        title: '✨ Nouvel utilisateur',
-        icon: 'user',
-        details: `Mot de passe temporaire : ${response.data.data.temporaryPassword}`,
-        duration: 15000
+      console.log('API Response:', response.data);
+      const tempPassword = response.data.data.temporaryPassword;
+      const userData = response.data.data.user || response.data.data;
+      const username = userData?.username || userData?.email || formData.email;
+      
+      // Afficher le modal avec le mot de passe
+      setPasswordModalData({
+        isOpen: true,
+        password: tempPassword,
+        username: username,
+        type: 'create'
       });
+      
       setShowModal(false);
       resetForm();
-      loadUsers();
+      cacheService.invalidateByPrefix(CACHE_KEYS.USERS);
+      loadUsers(true);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Erreur lors de la création', {
         title: 'Échec de création',
@@ -102,7 +139,8 @@ function Users() {
       });
       setShowModal(false);
       resetForm();
-      loadUsers();
+      cacheService.invalidateByPrefix(CACHE_KEYS.USERS);
+      loadUsers(true);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Erreur lors de la mise à jour', {
         title: 'Échec de la modification',
@@ -120,7 +158,8 @@ function Users() {
         title: '🗑️ Utilisateur supprimé',
         icon: 'trash'
       });
-      loadUsers();
+      cacheService.invalidateByPrefix(CACHE_KEYS.USERS);
+      loadUsers(true);
     } catch (error) {
       toast.error('Impossible de supprimer cet utilisateur', {
         title: 'Échec de la suppression',
@@ -136,7 +175,8 @@ function Users() {
         title: '🔄 Statut mis à jour',
         icon: 'user'
       });
-      loadUsers();
+      cacheService.invalidateByPrefix(CACHE_KEYS.USERS);
+      loadUsers(true);
     } catch (error) {
       toast.error('Impossible de modifier le statut', {
         title: 'Erreur',
@@ -151,12 +191,15 @@ function Users() {
     try {
       const response = await userAPI.resetPassword(id);
       const newPassword = response.data.data.temporaryPassword;
-      toast.success(`Un nouveau mot de passe a été généré pour ${username}`, {
-        title: '🔑 Mot de passe réinitialisé',
-        icon: 'password',
-        details: `Nouveau mot de passe : ${newPassword}`,
-        duration: 20000
+      
+      // Afficher le modal avec le nouveau mot de passe
+      setPasswordModalData({
+        isOpen: true,
+        password: newPassword,
+        username: username,
+        type: 'reset'
       });
+      
       loadUsers();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Erreur lors de la réinitialisation', {
@@ -266,10 +309,10 @@ function Users() {
             <thead>
               <tr>
                 <th>USERNAME</th>
-                <th>FULL NAME</th>
-                <th>EMAIL</th>
-                <th>ROLES</th>
-                <th>STATUS</th>
+                <th className="hide-mobile">NOM COMPLET</th>
+                <th className="hide-tablet">EMAIL</th>
+                <th className="hide-mobile">RÔLES</th>
+                <th>STATUT</th>
                 <th>ACTIONS</th>
               </tr>
             </thead>
@@ -277,11 +320,16 @@ function Users() {
               {users.map((user) => (
                 <tr key={user.id}>
                   <td>
-                    <span className="font-mono text-success font-semibold">{user.username}</span>
+                    <div>
+                      <span className="font-mono text-success font-semibold">{user.username}</span>
+                      <div className="show-mobile text-xs text-secondary" style={{display: 'none'}}>
+                        {user.firstName} {user.lastName}
+                      </div>
+                    </div>
                   </td>
-                  <td>{user.firstName} {user.lastName}</td>
-                  <td className="text-secondary">{user.email}</td>
-                  <td>
+                  <td className="hide-mobile">{user.firstName} {user.lastName}</td>
+                  <td className="text-secondary hide-tablet">{user.email}</td>
+                  <td className="hide-mobile">
                     <div className="flex gap-1 flex-wrap">
                       {Array.from(user.roles).map(role => (
                         <span key={role} className="badge badge-info">
@@ -301,49 +349,67 @@ function Users() {
                     </div>
                   </td>
                   <td>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 actions-cell">
                       <button 
                         onClick={() => openEditModal(user)} 
-                        className="btn btn-secondary btn-sm"
-                        title="Edit user"
+                        className="btn btn-secondary btn-sm btn-icon"
+                        title="Modifier"
                       >
-                        Edit
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
                       </button>
                       <button 
                         onClick={() => handleToggleStatus(user.id)} 
-                        className="btn btn-ghost btn-sm"
-                        title={user.enabled ? 'Disable' : 'Enable'}
+                        className={`btn btn-sm btn-icon ${user.enabled ? 'btn-ghost' : 'btn-success'}`}
+                        title={user.enabled ? 'Désactiver' : 'Activer'}
                       >
-                        {user.enabled ? 'Disable' : 'Enable'}
+                        {user.enabled ? (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                          </svg>
+                        )}
                       </button>
                       {!user.accountNonLocked && (
                         <button 
                           onClick={() => handleUnlock(user.id)} 
-                          className="btn btn-success btn-sm"
-                          title="Unlock account"
+                          className="btn btn-success btn-sm btn-icon"
+                          title="Déverrouiller"
                         >
-                          Unlock
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                          </svg>
                         </button>
                       )}
                       {!isManager && (
                         <button 
                           onClick={() => handleResetPassword(user.id, user.username)} 
-                          className="btn btn-warning btn-sm"
-                          title="Reset password"
+                          className="btn btn-warning btn-sm btn-icon"
+                          title="Réinitialiser le mot de passe"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
                           </svg>
-                          Reset
                         </button>
                       )}
                       {!isManager && (
                         <button 
                           onClick={() => handleDeleteUser(user.id)} 
-                          className="btn btn-danger btn-sm"
-                          title="Delete user"
+                          className="btn btn-danger btn-sm btn-icon"
+                          title="Supprimer"
                         >
-                          Delete
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
                         </button>
                       )}
                     </div>
@@ -549,6 +615,15 @@ function Users() {
           </div>
         </div>
       )}
+
+      {/* Modal Mot de passe temporaire */}
+      <PasswordModal
+        isOpen={passwordModalData.isOpen}
+        onClose={() => setPasswordModalData({ ...passwordModalData, isOpen: false })}
+        password={passwordModalData.password}
+        username={passwordModalData.username}
+        type={passwordModalData.type}
+      />
     </div>
   );
 }

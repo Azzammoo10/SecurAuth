@@ -120,6 +120,8 @@ public class SessionManagementService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         List<UserSession> sessions = sessionRepository.findByUserIdAndActiveTrue(user.getId());
+        
+        log.debug("Found {} active sessions for user: {}", sessions.size(), username);
 
         return sessions.stream()
                 .map(session -> SessionResponse.builder()
@@ -130,7 +132,7 @@ public class SessionManagementService {
                         .loginTime(session.getLoginTime())
                         .lastActivity(session.getLastActivity())
                         .active(session.getActive())
-                        .currentSession(session.getSessionToken().equals(currentSessionToken))
+                        .currentSession(currentSessionToken != null && session.getSessionToken().equals(currentSessionToken))
                         .build())
                 .collect(Collectors.toList());
     }

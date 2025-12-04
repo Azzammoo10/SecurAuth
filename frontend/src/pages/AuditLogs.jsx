@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { auditAPI } from '../services/api';
+import usePageTitle from '../hooks/usePageTitle';
 
 function AuditLogs() {
+  usePageTitle('Journaux d\'audit');
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +126,7 @@ function AuditLogs() {
           )}
         </div>
         <div className="content-card-body">
-          <div className="flex gap-2 items-end">
+          <div className="flex gap-2 items-end flex-row-mobile-col">
             <div className="form-group" style={{ flex: 1 }}>
               <label className="form-label">Recherche globale</label>
               <div style={{ position: 'relative' }}>
@@ -151,12 +153,12 @@ function AuditLogs() {
                   className="form-input"
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                  placeholder="Rechercher par username, action, détails ou adresse IP..."
+                  placeholder="Rechercher..."
                   style={{ paddingLeft: '40px' }}
                 />
               </div>
             </div>
-            <div className="form-group" style={{ minWidth: '150px' }}>
+            <div className="form-group" style={{ minWidth: '120px' }}>
               <label className="form-label">Statut</label>
               <select
                 className="form-select"
@@ -171,14 +173,14 @@ function AuditLogs() {
             <button 
               type="button" 
               onClick={handleReset} 
-              className="btn btn-secondary"
-              style={{ height: '42px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              className="btn btn-secondary btn-icon"
+              style={{ height: '42px' }}
+              title="Réinitialiser"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                 <path d="M3 3v5h5"/>
               </svg>
-              Réinitialiser
             </button>
           </div>
         </div>
@@ -223,12 +225,12 @@ function AuditLogs() {
           <table className="table table-striped">
             <thead>
               <tr>
-                <th>TIMESTAMP</th>
-                <th>USERNAME</th>
+                <th>DATE</th>
+                <th>UTILISATEUR</th>
                 <th>ACTION</th>
-                <th>DETAILS</th>
-                <th>IP ADDRESS</th>
-                <th>STATUS</th>
+                <th className="hide-tablet">DÉTAILS</th>
+                <th className="hide-mobile">IP</th>
+                <th>STATUT</th>
               </tr>
             </thead>
             <tbody>
@@ -245,8 +247,13 @@ function AuditLogs() {
               ) : (
                 filteredLogs.map((log) => (
                   <tr key={log.id}>
-                    <td className="font-mono text-sm">
-                      {new Date(log.timestamp).toLocaleString('fr-FR')}
+                    <td className="font-mono text-sm" style={{ whiteSpace: 'nowrap' }}>
+                      {new Date(log.timestamp).toLocaleString('fr-FR', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
                     </td>
                     <td>
                       <span className="text-cyber-green font-mono">{log.username}</span>
@@ -256,15 +263,15 @@ function AuditLogs() {
                         {log.action}
                       </span>
                     </td>
-                    <td className="text-muted text-truncate" style={{ maxWidth: '300px' }}>
+                    <td className="text-muted text-truncate hide-tablet" style={{ maxWidth: '200px' }}>
                       {log.details || '-'}
                     </td>
-                    <td className="font-mono text-sm text-muted">
+                    <td className="font-mono text-sm text-muted hide-mobile">
                       {log.ipAddress || '-'}
                     </td>
                     <td>
                       <span className={`badge ${log.success ? 'badge-success' : 'badge-danger'}`}>
-                        {log.success ? 'SUCCESS' : 'FAILED'}
+                        {log.success ? '✓' : '✗'}
                       </span>
                     </td>
                   </tr>

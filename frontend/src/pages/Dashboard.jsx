@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userAPI, auditAPI, authAPI } from '../services/api';
 import authService from '../services/authService';
+import cacheService, { CACHE_KEYS } from '../services/cacheService';
+import usePageTitle from '../hooks/usePageTitle';
 
 function Dashboard() {
+  usePageTitle('Tableau de bord');
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -29,42 +32,69 @@ function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
+      // Vérifier le cache pour les stats du dashboard
+      const cachedStats = cacheService.get(CACHE_KEYS.DASHBOARD_STATS);
+      if (cachedStats) {
+        setStats(cachedStats.stats);
+        setRecentActivity(cachedStats.activity || []);
+        setFilteredActivity(cachedStats.activity || []);
+        setSessions(cachedStats.sessions || []);
+        setApiKeys(cachedStats.apiKeys || []);
+        setTwoFactorEnabled(cachedStats.twoFactorEnabled || false);
+        setUserProfile(cachedStats.userProfile || null);
+        setLoading(false);
+        return;
+      }
+
       // Charger le profil utilisateur pour tous
+      let profileData = null;
       try {
         const profileResponse = await userAPI.getMe();
-        setUserProfile(profileResponse.data.data);
+        profileData = profileResponse.data.data;
+        setUserProfile(profileData);
       } catch (e) {
         console.error('Error loading profile:', e);
       }
 
       // Charger les sessions actives
+      let sessionsData = [];
       try {
         const sessionsResponse = await authAPI.get('/account/sessions');
-        setSessions(sessionsResponse.data.data || []);
+        sessionsData = sessionsResponse.data.data || [];
+        setSessions(sessionsData);
       } catch (e) {
         console.error('Error loading sessions:', e);
       }
 
       // Charger le statut 2FA
+      let twoFAData = false;
       try {
         const twoFAResponse = await authAPI.get('/account/2fa/status');
-        setTwoFactorEnabled(twoFAResponse.data.data);
+        twoFAData = twoFAResponse.data.data === true;
+        setTwoFactorEnabled(twoFAData);
       } catch (e) {
         console.error('Error loading 2FA status:', e);
       }
 
       // Charger les clés API
+      let apiKeysData = [];
       try {
         const apiKeysResponse = await authAPI.get('/account/api-keys');
-        setApiKeys(apiKeysResponse.data.data || []);
+        apiKeysData = apiKeysResponse.data.data || [];
+        setApiKeys(apiKeysData);
       } catch (e) {
         console.error('Error loading API keys:', e);
       }
+
+      let statsData = { totalUsers: 0, activeUsers: 0, recentLogs: 0 };
+      let activityData = [];
 
       // Charger les utilisateurs si autorisé
       if (authService.hasAnyRole(['ADMIN', 'MANAGER'])) {
         const usersResponse = await userAPI.getAll(0, 1000);
         const users = usersResponse.data.data.content;
+        statsData.totalUsers = users.length;
+        statsData.activeUsers = users.filter(u => u.enabled).length;
         setStats(prev => ({
           ...prev,
           totalUsers: users.length,
@@ -75,13 +105,26 @@ function Dashboard() {
       // Charger les logs récents
       if (authService.hasAnyRole(['ADMIN', 'SECURITY'])) {
         const logsResponse = await auditAPI.getRecent(user.username);
-        setRecentActivity(logsResponse.data.data);
-        setFilteredActivity(logsResponse.data.data);
+        activityData = logsResponse.data.data;
+        setRecentActivity(activityData);
+        setFilteredActivity(activityData);
+        statsData.recentLogs = activityData.length;
         setStats(prev => ({
           ...prev,
           recentLogs: logsResponse.data.data.length,
         }));
       }
+
+      // Mettre en cache toutes les données du dashboard (2 minutes)
+      cacheService.set(CACHE_KEYS.DASHBOARD_STATS, {
+        stats: statsData,
+        activity: activityData,
+        sessions: sessionsData,
+        apiKeys: apiKeysData,
+        twoFactorEnabled: twoFAData,
+        userProfile: profileData
+      }, 2 * 60 * 1000);
+
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -216,8 +259,8 @@ function Dashboard() {
             </div>
           </div>
           <div className="content-card-body">
-            <div className="flex gap-2 items-end">
-              <div className="form-group" style={{ flex: 1 }}>
+            <div className="flex gap-2 items-end flex-wrap-mobile">
+              <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
                 <label className="form-label">Recherche globale</label>
                 <div style={{ position: 'relative' }}>
                   <svg 
@@ -243,12 +286,12 @@ function Dashboard() {
                     className="form-input"
                     value={activityFilters.search}
                     onChange={(e) => setActivityFilters({ ...activityFilters, search: e.target.value })}
-                    placeholder="Rechercher par username, action, détails ou adresse IP..."
+                    placeholder="Rechercher..."
                     style={{ paddingLeft: '40px' }}
                   />
                 </div>
               </div>
-              <div className="form-group" style={{ minWidth: '150px' }}>
+              <div className="form-group" style={{ minWidth: '120px' }}>
                 <label className="form-label">Statut</label>
                 <select
                   className="form-select"
@@ -263,14 +306,15 @@ function Dashboard() {
               <button 
                 type="button" 
                 onClick={handleResetFilters} 
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-icon-only-mobile"
                 style={{ height: '42px' }}
+                title="Réinitialiser"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                   <path d="M3 3v5h5"/>
                 </svg>
-                Réinitialiser
+                <span className="btn-text">Réinitialiser</span>
               </button>
             </div>
           </div>
@@ -292,15 +336,15 @@ function Dashboard() {
             <span className="content-card-badge">{filteredActivity.length} / {recentActivity.length} entrée(s)</span>
           </div>
           <div className="table-container">
-            <table className="table table-striped">
+            <table className="table table-striped table-responsive">
               <thead>
                 <tr>
                   <th>USERNAME</th>
                   <th>ACTION</th>
-                  <th>DETAILS</th>
-                  <th>IP ADDRESS</th>
+                  <th className="hide-tablet">DETAILS</th>
+                  <th className="hide-mobile">IP ADDRESS</th>
                   <th>STATUS</th>
-                  <th>TIMESTAMP</th>
+                  <th className="hide-mobile">TIMESTAMP</th>
                 </tr>
               </thead>
               <tbody>
@@ -319,14 +363,14 @@ function Dashboard() {
                     <tr key={log.id}>
                       <td className="font-mono text-info">{log.username || '-'}</td>
                       <td className="font-semibold">{log.action}</td>
-                      <td className="text-secondary">{log.details || '-'}</td>
-                      <td className="font-mono text-muted">{log.ipAddress || '-'}</td>
+                      <td className="text-secondary hide-tablet">{log.details || '-'}</td>
+                      <td className="font-mono text-muted hide-mobile">{log.ipAddress || '-'}</td>
                       <td>
                         <span className={`badge ${log.success ? 'badge-success' : 'badge-danger'}`}>
                           {log.success ? 'SUCCESS' : 'FAILED'}
                         </span>
                       </td>
-                      <td className="font-mono text-muted">
+                      <td className="font-mono text-muted hide-mobile">
                         {new Date(log.timestamp).toLocaleString()}
                       </td>
                     </tr>

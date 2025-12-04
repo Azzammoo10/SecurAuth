@@ -50,9 +50,18 @@ export const authService = {
     return roles.some(role => user?.roles?.includes(role)) || false;
   },
 
-  // Déconnexion
+  // Déconnexion - vide aussi le cache
   logout: () => {
     localStorage.clear();
+    // Vider le cache mémoire si le module est importé
+    try {
+      const cacheService = require('./cacheService').default;
+      if (cacheService && cacheService.clear) {
+        cacheService.clear();
+      }
+    } catch (e) {
+      // Module non disponible, pas de problème
+    }
   },
 };
 

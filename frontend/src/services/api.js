@@ -30,10 +30,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
+    const originalRequest = error.config;
+    
+    // Ne pas intercepter les erreurs 401 sur les routes d'authentification
+    if (error.response?.status === 401 && 
+        !originalRequest.url.includes('/auth/login') && 
+        !originalRequest.url.includes('/auth/verify-2fa')) {
       // Token expiré, essayer de refresh
       const refreshToken = localStorage.getItem('refreshToken');
-      if (refreshToken) {
+      if (refreshToken && !originalRequest._retry) {
+        originalRequest._retry = true;
         try {
           const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refreshToken,
@@ -42,14 +48,14 @@ api.interceptors.response.use(
           localStorage.setItem('accessToken', accessToken);
           
           // Retry la requête originale
-          error.config.headers.Authorization = `Bearer ${accessToken}`;
-          return axios(error.config);
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          return axios(originalRequest);
         } catch (refreshError) {
           // Refresh failed, logout
           localStorage.clear();
           window.location.href = '/login';
         }
-      } else {
+      } else if (!refreshToken) {
         localStorage.clear();
         window.location.href = '/login';
       }

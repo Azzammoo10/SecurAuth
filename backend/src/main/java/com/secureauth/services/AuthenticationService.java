@@ -74,7 +74,19 @@ public class AuthenticationService {
 
         // Vérification du mot de passe
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            // Mot de passe incorrect - incrémenter les tentatives
+            // Vérifier si l'utilisateur est ADMIN - pas de limite de tentatives pour les admins
+            boolean isAdmin = user.getRoles().stream()
+                    .anyMatch(role -> role.getName().equals("ADMIN"));
+            
+            if (isAdmin) {
+                // Pour les admins : log l'échec mais pas de verrouillage
+                auditService.logFailure(user.getUsername(), AuditLog.Action.LOGIN_FAILED, 
+                        "Mot de passe incorrect (Admin - sans limite)");
+                log.warn("Failed login attempt for admin user: {}", user.getUsername());
+                throw new AuthenticationException("Mot de passe incorrect.");
+            }
+            
+            // Pour les non-admins : incrémenter les tentatives
             user.incrementFailedAttempts();
             int remainingAttempts = maxLoginAttempts - user.getFailedLoginAttempts();
             
@@ -92,7 +104,12 @@ public class AuthenticationService {
                 userRepository.saveAndFlush(user);
                 auditService.logFailure(user.getUsername(), AuditLog.Action.LOGIN_FAILED, 
                         "Mot de passe incorrect - Tentative " + user.getFailedLoginAttempts() + "/" + maxLoginAttempts);
-                throw new AuthenticationException("Identifiants invalides. " + remainingAttempts + " tentative(s) restante(s) avant verrouillage.");
+                
+                // Message amélioré avec le nombre de tentatives restantes
+                String attemptMessage = remainingAttempts == 1 
+                        ? "⚠️ Attention : dernière tentative avant verrouillage du compte !"
+                        : "Mot de passe incorrect. Il vous reste " + remainingAttempts + " tentative(s) avant le verrouillage de votre compte.";
+                throw new AuthenticationException(attemptMessage);
             }
         }
 
