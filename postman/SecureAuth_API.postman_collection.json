@@ -19,6 +19,11 @@
       "key": "refreshToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -417,6 +422,170 @@
                   "value": "true"
                 }
               ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "API Keys",
+      "description": "Gestion des clés API pour l'accès programmatique",
+      "item": [
+        {
+          "name": "Create API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.key) {",
+                  "        pm.collectionVariables.set('apiKey', jsonData.data.key);",
+                  "        console.log('API Key saved! Store it securely.');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mon Script de Test\",\n  \"expiresInDays\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "api-keys"]
+            }
+          }
+        },
+        {
+          "name": "List My API Keys",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "api-keys"]
+            }
+          }
+        },
+        {
+          "name": "Revoke API Key",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account/api-keys/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "api-keys", "1"]
+            }
+          }
+        },
+        {
+          "name": "Test API Key Authentication",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "ApiKey {{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "description": "Gestion des sessions actives",
+      "item": [
+        {
+          "name": "Get My Active Sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "sessions"]
+            }
+          }
+        },
+        {
+          "name": "Revoke Specific Session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account/sessions/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "sessions", "1"]
+            }
+          }
+        },
+        {
+          "name": "Revoke All Sessions",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "sessions"]
             }
           }
         }

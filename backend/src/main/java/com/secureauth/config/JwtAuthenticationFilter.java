@@ -1,5 +1,7 @@
 package com.secureauth.config;
 
+import com.secureauth.entities.User;
+import com.secureauth.services.ApiKeyService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,7 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Filtre JWT - Intercepte les requêtes et valide le token JWT
+ * Filtre JWT et API Key - Intercepte les requêtes et valide le token JWT ou la clé API
  * S'exécute une fois par requête
  */
 @Component
@@ -26,6 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final ApiKeyService apiKeyService;
 
     @Override
     protected void doFilterInternal(
@@ -35,27 +38,68 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String username;
 
         // Vérifie la présence du header Authorization
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Extrait le token
-        jwt = authHeader.substring(7);
-        
-        try {
-            // Extrait le username du token
-            username = jwtService.extractUsername(jwt);
+        // Gestion des clés API (ApiKey sk_xxx...)
+        if (authHeader.startsWith("ApiKey ")) {
+            handleApiKeyAuthentication(authHeader.substring(7), request);
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            // Si l'utilisateur n'est pas encore authentifié
+        // Gestion des tokens JWT (Bearer xxx...)
+        if (authHeader.startsWith("Bearer ")) {
+            handleJwtAuthentication(authHeader.substring(7), request);
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Authentification par clé API
+     */
+    private void handleApiKeyAuthentication(String apiKey, HttpServletRequest request) {
+        try {
+            if (apiKeyService.validateApiKey(apiKey)) {
+                User user = apiKeyService.getUserByApiKey(apiKey);
+                if (user != null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+                    
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    
+                    logger.debug("API Key authentication successful for user: " + user.getUsername());
+                }
+            } else {
+                logger.warn("Invalid or expired API key");
+            }
+        } catch (Exception e) {
+            logger.error("API Key validation error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Authentification par token JWT
+     */
+    private void handleJwtAuthentication(String jwt, HttpServletRequest request) {
+        try {
+            String username = jwtService.extractUsername(jwt);
+
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-                // Valide le token
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -65,15 +109,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authToken.setDetails(
                             new WebAuthenticationDetailsSource().buildDetails(request)
                     );
-                    // Met à jour le contexte de sécurité
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
         } catch (Exception e) {
-            // En cas d'erreur, on laisse passer sans authentifier
             logger.error("JWT validation error: " + e.getMessage());
         }
-
-        filterChain.doFilter(request, response);
     }
 }

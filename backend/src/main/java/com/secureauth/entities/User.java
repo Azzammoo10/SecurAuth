@@ -20,10 +20,7 @@ import java.util.stream.Collectors;
  * Implémente UserDetails pour l'intégration Spring Security
  */
 @Entity
-@Table(name = "users", indexes = {
-    @Index(name = "idx_username", columnList = "username"),
-    @Index(name = "idx_email", columnList = "email")
-})
+@Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter

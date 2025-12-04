@@ -27,6 +27,10 @@ logs/
 .env.local
 .env.production
 
+# Sensitive Configuration
+backend/src/main/resources/application.yml
+backend/target/classes/application.yml
+
 # Database
 *.db
 *.sqlite

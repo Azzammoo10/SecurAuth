@@ -15,11 +15,8 @@ import com.secureauth.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,10 +34,11 @@ public class AuthenticationService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuditService auditService;
     private final TwoFactorAuthenticationService twoFactorService;
+    private final SessionManagementService sessionManagementService;
 
     @Value("${security.max-login-attempts}")
     private int maxLoginAttempts;
@@ -51,40 +49,56 @@ public class AuthenticationService {
     /**
      * Authentifie un utilisateur et retourne les tokens JWT
      */
-    @Transactional
-    public AuthenticationResponse login(LoginRequest request) {
+    @Transactional(noRollbackFor = {AuthenticationException.class, LockedException.class})
+    public AuthenticationResponse login(LoginRequest request, String ipAddress, String userAgent) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> {
                     auditService.logFailure(request.getUsername(), AuditLog.Action.LOGIN_FAILED, 
                             "Utilisateur non trouvé");
-                    return new UsernameNotFoundException("Identifiants invalides");
+                    return new AuthenticationException("Identifiants invalides");
                 });
 
-        // Vérifie si le compte est verrouillé et si le verrouillage peut être levé
+        // Vérifie si le compte est verrouillé
         if (!user.isAccountNonLocked()) {
-            if (user.isLockExpired(accountLockDuration)) {
+            // Si accountLockDuration > 0, vérifier si le verrouillage peut être auto-levé
+            if (accountLockDuration > 0 && user.isLockExpired(accountLockDuration)) {
                 user.unlock();
-                userRepository.save(user);
+                userRepository.saveAndFlush(user);
                 log.info("Account auto-unlocked: {}", user.getUsername());
             } else {
                 auditService.logFailure(user.getUsername(), AuditLog.Action.LOGIN_FAILED, 
-                        "Compte verrouillé");
-                throw new LockedException("Compte verrouillé. Réessayez plus tard ou contactez un administrateur.");
+                        "Compte verrouillé - Contactez un administrateur");
+                throw new LockedException("Compte verrouillé suite à trop de tentatives échouées. Contactez un administrateur pour le déverrouiller.");
             }
         }
 
-        try {
-            // Authentification
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getUsername(),
-                            request.getPassword()
-                    )
-            );
+        // Vérification du mot de passe
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            // Mot de passe incorrect - incrémenter les tentatives
+            user.incrementFailedAttempts();
+            int remainingAttempts = maxLoginAttempts - user.getFailedLoginAttempts();
+            
+            log.warn("Failed login attempt {}/{} for user: {}", 
+                    user.getFailedLoginAttempts(), maxLoginAttempts, user.getUsername());
+            
+            if (user.getFailedLoginAttempts() >= maxLoginAttempts) {
+                user.lock();
+                userRepository.saveAndFlush(user);
+                auditService.logFailure(user.getUsername(), AuditLog.Action.USER_LOCKED, 
+                        "Compte verrouillé après " + maxLoginAttempts + " tentatives échouées");
+                log.warn("Account locked due to {} failed attempts: {}", maxLoginAttempts, user.getUsername());
+                throw new AuthenticationException("Compte verrouillé suite à trop de tentatives échouées. Contactez un administrateur.");
+            } else {
+                userRepository.saveAndFlush(user);
+                auditService.logFailure(user.getUsername(), AuditLog.Action.LOGIN_FAILED, 
+                        "Mot de passe incorrect - Tentative " + user.getFailedLoginAttempts() + "/" + maxLoginAttempts);
+                throw new AuthenticationException("Identifiants invalides. " + remainingAttempts + " tentative(s) restante(s) avant verrouillage.");
+            }
+        }
 
-            // Réinitialise les tentatives échouées
-            user.resetFailedAttempts();
-            userRepository.save(user);
+        // Mot de passe correct - réinitialiser les tentatives échouées
+        user.resetFailedAttempts();
+        userRepository.save(user);
 
             // Si l'utilisateur a la 2FA activée, on demande le code
             if (user.getTwoFactorEnabled() != null && user.getTwoFactorEnabled()) {
@@ -111,10 +125,13 @@ public class AuthenticationService {
 
             // Sauvegarde le refresh token
             saveRefreshToken(user, refreshToken);
+            
+            // Crée une session utilisateur
+            var session = sessionManagementService.createSession(user, ipAddress, userAgent);
 
             // Audit
             auditService.logSuccess(user.getUsername(), AuditLog.Action.LOGIN_SUCCESS, 
-                    "Connexion réussie");
+                    "Connexion réussie depuis " + ipAddress);
 
             return AuthenticationResponse.builder()
                     .accessToken(accessToken)
@@ -123,33 +140,15 @@ public class AuthenticationService {
                     .expiresIn(3600L) // 1 heure
                     .user(mapToUserResponse(user))
                     .requires2FA(false)
+                    .sessionToken(session.getSessionToken())
                     .build();
-
-        } catch (BadCredentialsException e) {
-            // Incrémente les tentatives échouées
-            user.incrementFailedAttempts();
-            
-            if (user.getFailedLoginAttempts() >= maxLoginAttempts) {
-                user.lock();
-                auditService.logFailure(user.getUsername(), AuditLog.Action.USER_LOCKED, 
-                        "Trop de tentatives échouées");
-                log.warn("Account locked due to failed attempts: {}", user.getUsername());
-            } else {
-                auditService.logFailure(user.getUsername(), AuditLog.Action.LOGIN_FAILED, 
-                        "Mot de passe incorrect");
-            }
-            
-            userRepository.save(user);
-            
-            throw new AuthenticationException("Identifiants invalides");
-        }
     }
 
     /**
      * Vérifie le code 2FA et complète l'authentification
      */
     @Transactional
-    public AuthenticationResponse verify2FALogin(String tempToken, String code) {
+    public AuthenticationResponse verify2FALogin(String tempToken, String code, String ipAddress, String userAgent) {
         // Extrait le username du token temporaire
         String username = jwtService.extractUsername(tempToken);
         
@@ -173,6 +172,9 @@ public class AuthenticationService {
         String refreshToken = jwtService.generateRefreshToken(user);
 
         saveRefreshToken(user, refreshToken);
+        
+        // Crée une session utilisateur
+        var session = sessionManagementService.createSession(user, ipAddress, userAgent);
 
         auditService.logSuccess(username, AuditLog.Action.LOGIN_SUCCESS, 
                 "Connexion réussie avec 2FA");
@@ -184,6 +186,7 @@ public class AuthenticationService {
                 .expiresIn(3600L)
                 .user(mapToUserResponse(user))
                 .requires2FA(false)
+                .sessionToken(session.getSessionToken())
                 .build();
     }
 

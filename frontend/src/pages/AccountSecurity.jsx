@@ -197,16 +197,44 @@ function AccountSecurity() {
     }
   };
 
-  const handleInvalidateSession = async (sessionId) => {
+  const handleInvalidateSession = async (sessionId, isCurrentSession = false) => {
     try {
       await authAPI.delete(`/account/sessions/${sessionId}`);
+      
+      // Si c'est la session actuelle, déconnecter l'utilisateur
+      if (isCurrentSession) {
+        authService.logout();
+        navigate('/login');
+        return;
+      }
+      
       toast.success('La session a été déconnectée', {
         title: '🔌 Session terminée',
         icon: 'session'
       });
       loadSessions();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Échec de l\'invalidation de la session', {
+      toast.error(err.response?.data?.message || 'Échec de la déconnexion de la session', {
+        title: 'Erreur',
+        icon: 'error'
+      });
+    }
+  };
+
+  const handleInvalidateAllSessions = async () => {
+    if (!confirm('Voulez-vous vraiment déconnecter toutes les autres sessions ?')) {
+      return;
+    }
+    
+    try {
+      await authAPI.delete('/account/sessions');
+      toast.success('Toutes les autres sessions ont été déconnectées', {
+        title: '🔌 Sessions terminées',
+        icon: 'session'
+      });
+      loadSessions();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Échec de la déconnexion des sessions', {
         title: 'Erreur',
         icon: 'error'
       });
@@ -756,7 +784,17 @@ function AccountSecurity() {
                   </div>
                 </div>
               ) : (
-                <div className="section-content">
+                <>
+                  {sessions.length > 1 && (
+                    <div className="sessions-actions">
+                      <button 
+                        onClick={handleInvalidateAllSessions}
+                        className="btn btn-secondary"
+                      >
+                        🚪 Déconnecter toutes les autres sessions
+                      </button>
+                    </div>
+                  )}
                   <div className="sessions-info-box">
                     <div className="info-box-icon">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -769,67 +807,47 @@ function AccountSecurity() {
                   </div>
                   
                   <div className="sessions-list">
-                    {sessions.map((session) => (
-                      <div 
-                        key={session.id} 
-                        className={`session-item ${session.currentSession ? 'current' : ''}`}
-                      >
-                        <div className="session-icon">
-                          {session.userAgent?.includes('Mobile') ? (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-                              <line x1="12" y1="18" x2="12.01" y2="18"/>
-                            </svg>
-                          ) : (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                              <line x1="8" y1="21" x2="16" y2="21"/>
-                              <line x1="12" y1="17" x2="12" y2="21"/>
-                            </svg>
-                          )}
-                        </div>
-                        <div className="session-info">
-                          <div className="session-device">
-                            {session.userAgent || 'Appareil inconnu'}
-                            {session.currentSession && (
-                              <span className="current-badge">Session actuelle</span>
-                            )}
+                    {sessions.map((session) => {
+                      const getDeviceIcon = (ua) => {
+                        if (!ua) return '💻';
+                        const lowerUA = ua.toLowerCase();
+                        if (lowerUA.includes('mobile') || lowerUA.includes('iphone') || lowerUA.includes('android')) return '📱';
+                        if (lowerUA.includes('tablette') || lowerUA.includes('ipad')) return '📱';
+                        if (lowerUA.includes('postman') || lowerUA.includes('curl') || lowerUA.includes('node')) return '🔧';
+                        return '💻';
+                      };
+                      
+                      return (
+                        <div 
+                          key={session.id} 
+                          className={`session-item ${session.currentSession ? 'current' : ''}`}
+                        >
+                          <div className="session-icon">
+                            {getDeviceIcon(session.userAgent)}
                           </div>
-                          <div className="session-details">
-                            <span>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                                <circle cx="12" cy="10" r="3"/>
-                              </svg>
-                              {session.ipAddress}
-                            </span>
-                            <span>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <polyline points="12 6 12 12 16 14"/>
-                              </svg>
-                              {new Date(session.lastActivity).toLocaleString('fr-FR')}
-                            </span>
+                          <div className="session-info">
+                            <div className="session-device">
+                              {session.userAgent || 'Appareil inconnu'}
+                              {session.currentSession && (
+                                <span className="current-badge">Session actuelle</span>
+                              )}
+                            </div>
+                            <div className="session-details">
+                              <span>📍 {session.ipAddress}</span>
+                              <span>🕐 {new Date(session.lastActivity).toLocaleString('fr-FR')}</span>
+                            </div>
                           </div>
-                        </div>
-                        {!session.currentSession && (
                           <button 
-                            onClick={() => handleInvalidateSession(session.id)}
-                            className="btn btn-sm btn-danger-outline"
-                            title="Déconnecter cette session"
+                            onClick={() => handleInvalidateSession(session.id, session.currentSession)}
+                            className={`btn btn-sm ${session.currentSession ? 'btn-danger' : 'btn-secondary'}`}
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                              <polyline points="16 17 21 12 16 7"/>
-                              <line x1="21" y1="12" x2="9" y2="12"/>
-                            </svg>
-                            Déconnecter
+                            {session.currentSession ? '🚪 Me déconnecter' : 'Déconnecter'}
                           </button>
-                        )}
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>

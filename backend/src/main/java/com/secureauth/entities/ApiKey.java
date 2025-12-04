@@ -9,10 +9,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "api_keys", indexes = {
-    @Index(name = "idx_key_hash", columnList = "keyHash"),
-    @Index(name = "idx_user_id", columnList = "user_id")
-})
+@Table(name = "api_keys")
 @Data
 @Builder
 @NoArgsConstructor
@@ -46,6 +43,7 @@ public class ApiKey {
 
     private LocalDateTime lastUsedAt;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean active = true;
 

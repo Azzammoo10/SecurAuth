@@ -17,6 +17,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const sessionToken = localStorage.getItem('sessionToken');
+    if (sessionToken) {
+      config.headers['X-Session-Token'] = sessionToken;
+    }
     return config;
   },
   (error) => Promise.reject(error)

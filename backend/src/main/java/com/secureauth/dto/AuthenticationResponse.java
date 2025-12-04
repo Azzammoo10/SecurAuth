@@ -21,6 +21,7 @@ public class AuthenticationResponse {
     private UserResponse user;
     private Boolean requires2FA;
     private String tempToken;
+    private String sessionToken;
 
     @Builder.Default
     private String tokenTypeValue = "Bearer";

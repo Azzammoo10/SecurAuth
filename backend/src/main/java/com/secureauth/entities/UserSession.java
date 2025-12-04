@@ -43,6 +43,7 @@ public class UserSession {
     private LocalDateTime expiresAt;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @PrePersist

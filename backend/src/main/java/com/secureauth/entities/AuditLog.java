@@ -12,11 +12,7 @@ import java.time.LocalDateTime;
  * Permet la traçabilité complète des opérations IAM
  */
 @Entity
-@Table(name = "audit_logs", indexes = {
-    @Index(name = "idx_username", columnList = "username"),
-    @Index(name = "idx_action", columnList = "action"),
-    @Index(name = "idx_timestamp", columnList = "timestamp")
-})
+@Table(name = "audit_logs")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter

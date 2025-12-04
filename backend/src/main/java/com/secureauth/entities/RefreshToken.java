@@ -12,10 +12,7 @@ import java.time.LocalDateTime;
  * Permet le renouvellement des access tokens sans nouvelle authentification
  */
 @Entity
-@Table(name = "refresh_tokens", indexes = {
-    @Index(name = "idx_token", columnList = "token"),
-    @Index(name = "idx_user", columnList = "user_id")
-})
+@Table(name = "refresh_tokens")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter

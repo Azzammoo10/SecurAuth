@@ -2,14 +2,18 @@ import { jwtDecode } from 'jwt-decode';
 
 export const authService = {
   // Stockage des tokens
-  setTokens: (accessToken, refreshToken) => {
+  setTokens: (accessToken, refreshToken, sessionToken = null) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
+    if (sessionToken) {
+      localStorage.setItem('sessionToken', sessionToken);
+    }
   },
 
   // Récupération du token
   getAccessToken: () => localStorage.getItem('accessToken'),
   getRefreshToken: () => localStorage.getItem('refreshToken'),
+  getSessionToken: () => localStorage.getItem('sessionToken'),
 
   // Stockage user info
   setUser: (user) => {

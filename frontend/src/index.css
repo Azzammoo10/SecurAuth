@@ -1173,6 +1173,11 @@
 }
 
 /* Sessions List */
+.sessions-actions {
+  padding: var(--space-4);
+  padding-bottom: 0;
+}
+
 .sessions-list {
   padding: var(--space-4);
   display: flex;
