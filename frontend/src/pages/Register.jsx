@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '../components/Toast';
 import lightLogo from '../images/light_theme.png';
 import darkLogo from '../images/dark_theme.png';
 
@@ -12,7 +13,7 @@ function Register() {
     requestReason: ''
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
+  const toast = useToast();
   
   // Détecter le thème actuel
   const [theme, setTheme] = useState(() => {
@@ -42,7 +43,6 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
 
     try {
       const response = await fetch('http://localhost:8080/api/v1/registration/submit', {
@@ -56,21 +56,22 @@ function Register() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({
-          type: 'success',
-          text: data.message || 'Registration submitted successfully! Please wait for admin approval.'
+        toast.success('Votre demande sera traitée par un administrateur', {
+          title: '✅ Demande envoyée avec succès !',
+          icon: 'user',
+          duration: 8000
         });
         setFormData({ firstName: '', lastName: '', email: '', companyName: '', phoneNumber: '', requestReason: '' });
       } else {
-        setMessage({
-          type: 'error',
-          text: data.message || 'Registration failed. Please try again.'
+        toast.error(data.message || 'L\'inscription a échoué. Veuillez réessayer.', {
+          title: 'Erreur d\'inscription',
+          icon: 'error'
         });
       }
     } catch (error) {
-      setMessage({
-        type: 'error',
-        text: 'Network error. Please check your connection and try again.'
+      toast.error('Erreur réseau. Vérifiez votre connexion et réessayez.', {
+        title: 'Erreur de connexion',
+        icon: 'error'
       });
     } finally {
       setLoading(false);
@@ -90,12 +91,6 @@ function Register() {
             Create your account
           </p>
         </div>
-
-        {message && (
-          <div className={`alert alert-${message.type}`}>
-            {message.text}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-2">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { roleAPI } from '../services/api';
+import { useToast } from '../components/Toast';
 
 function Roles() {
   const [roles, setRoles] = useState([]);
@@ -11,7 +12,7 @@ function Roles() {
     name: '',
     description: '',
   });
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const toast = useToast();
 
   useEffect(() => {
     loadRoles();
@@ -22,7 +23,10 @@ function Roles() {
       const response = await roleAPI.getAll();
       setRoles(response.data.data);
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors du chargement des rôles' });
+      toast.error('Erreur lors du chargement des rôles', {
+        title: 'Erreur de chargement',
+        icon: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -32,14 +36,17 @@ function Roles() {
     e.preventDefault();
     try {
       await roleAPI.create(formData);
-      setMessage({ type: 'success', text: 'Rôle créé avec succès' });
+      toast.success(`Rôle "${formData.name}" créé avec succès`, {
+        title: '✨ Nouveau rôle',
+        icon: 'role'
+      });
       setShowModal(false);
       resetForm();
       loadRoles();
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || 'Erreur lors de la création' 
+      toast.error(error.response?.data?.message || 'Erreur lors de la création', {
+        title: 'Échec de création',
+        icon: 'error'
       });
     }
   };
@@ -48,14 +55,17 @@ function Roles() {
     e.preventDefault();
     try {
       await roleAPI.update(selectedRole.id, formData);
-      setMessage({ type: 'success', text: 'Rôle mis à jour avec succès' });
+      toast.success('Le rôle a été mis à jour', {
+        title: '✅ Rôle modifié',
+        icon: 'role'
+      });
       setShowModal(false);
       resetForm();
       loadRoles();
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || 'Erreur lors de la mise à jour' 
+      toast.error(error.response?.data?.message || 'Erreur lors de la mise à jour', {
+        title: 'Échec de la modification',
+        icon: 'error'
       });
     }
   };
@@ -65,10 +75,16 @@ function Roles() {
     
     try {
       await roleAPI.delete(id);
-      setMessage({ type: 'success', text: 'Rôle supprimé avec succès' });
+      toast.success('Le rôle a été supprimé', {
+        title: '🗑️ Rôle supprimé',
+        icon: 'trash'
+      });
       loadRoles();
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de la suppression' });
+      toast.error('Impossible de supprimer ce rôle', {
+        title: 'Échec de la suppression',
+        icon: 'error'
+      });
     }
   };
 
@@ -130,14 +146,6 @@ function Roles() {
           </button>
         </div>
       </div>
-
-      {message.text && (
-        <div className={`alert alert-${message.type} animate-fadeIn`}>
-          <span className="alert-icon">{message.type === 'success' ? '✓' : '⚠️'}</span>
-          {message.text}
-          <button className="alert-close" onClick={() => setMessage({ type: '', text: '' })}>×</button>
-        </div>
-      )}
 
       <div className="content-card">
         <div className="content-card-header">

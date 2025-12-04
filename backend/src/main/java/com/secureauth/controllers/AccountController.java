@@ -74,6 +74,13 @@ public class AccountController {
         return ResponseEntity.ok(ApiResponse.success("2FA disabled successfully", null));
     }
 
+    @Operation(summary = "Get 2FA status", description = "Check if 2FA is enabled for current user")
+    @GetMapping("/2fa/status")
+    public ResponseEntity<ApiResponse<Boolean>> get2FAStatus(Authentication authentication) {
+        boolean enabled = twoFactorService.is2FARequired(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("2FA status retrieved", enabled));
+    }
+
     @Operation(summary = "Get active sessions", description = "Get all active sessions for current user")
     @GetMapping("/sessions")
     public ResponseEntity<ApiResponse<List<SessionResponse>>> getActiveSessions(

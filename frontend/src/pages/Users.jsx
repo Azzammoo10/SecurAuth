@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { userAPI, roleAPI } from '../services/api';
+import authService from '../services/authService';
+import { useToast } from '../components/Toast';
 
 function Users() {
   const [users, setUsers] = useState([]);
@@ -15,7 +17,19 @@ function Users() {
     phoneNumber: '',
     roles: ['USER'],
   });
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const toast = useToast();
+
+  // Détecter si l'utilisateur connecté est un manager
+  const currentUser = authService.getUser();
+  const isManager = currentUser?.roles?.includes('MANAGER') && !currentUser?.roles?.includes('ADMIN');
+
+  // Rôle USER par défaut pour le manager
+  const defaultUserRole = { id: 'user-role', name: 'USER', description: 'Utilisateur standard' };
+
+  // Filtrer les rôles disponibles pour le manager (seulement USER)
+  const availableRoles = isManager 
+    ? (roles.find(role => role.name === 'USER') ? roles.filter(role => role.name === 'USER') : [defaultUserRole])
+    : roles;
 
   useEffect(() => {
     loadUsers();
@@ -25,9 +39,24 @@ function Users() {
   const loadUsers = async () => {
     try {
       const response = await userAPI.getAll(0, 100);
-      setUsers(response.data.data.content);
+      let usersList = response.data.data.content;
+      
+      // Filtrer les utilisateurs ADMIN si le manager consulte la liste
+      if (isManager) {
+        usersList = usersList.filter(user => {
+          const userRoles = Array.isArray(user.roles) ? user.roles : Array.from(user.roles || []);
+          return !userRoles.some(role => 
+            (typeof role === 'string' ? role : role?.name) === 'ADMIN'
+          );
+        });
+      }
+      
+      setUsers(usersList);
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors du chargement des utilisateurs' });
+      toast.error('Erreur lors du chargement des utilisateurs', {
+        title: 'Erreur de chargement',
+        icon: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -46,17 +75,19 @@ function Users() {
     e.preventDefault();
     try {
       const response = await userAPI.create(formData);
-      setMessage({ 
-        type: 'success', 
-        text: `Utilisateur créé avec succès ! Mot de passe temporaire: ${response.data.data.temporaryPassword}` 
+      toast.success(`Utilisateur ${formData.firstName} ${formData.lastName} créé avec succès !`, {
+        title: '✨ Nouvel utilisateur',
+        icon: 'user',
+        details: `Mot de passe temporaire : ${response.data.data.temporaryPassword}`,
+        duration: 15000
       });
       setShowModal(false);
       resetForm();
       loadUsers();
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || 'Erreur lors de la création' 
+      toast.error(error.response?.data?.message || 'Erreur lors de la création', {
+        title: 'Échec de création',
+        icon: 'error'
       });
     }
   };
@@ -65,14 +96,17 @@ function Users() {
     e.preventDefault();
     try {
       await userAPI.update(selectedUser.id, formData);
-      setMessage({ type: 'success', text: 'Utilisateur mis à jour avec succès' });
+      toast.success('Les informations ont été mises à jour', {
+        title: '✅ Utilisateur modifié',
+        icon: 'user'
+      });
       setShowModal(false);
       resetForm();
       loadUsers();
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || 'Erreur lors de la mise à jour' 
+      toast.error(error.response?.data?.message || 'Erreur lors de la mise à jour', {
+        title: 'Échec de la modification',
+        icon: 'error'
       });
     }
   };
@@ -82,20 +116,32 @@ function Users() {
     
     try {
       await userAPI.delete(id);
-      setMessage({ type: 'success', text: 'Utilisateur supprimé avec succès' });
+      toast.success('L\'utilisateur a été supprimé définitivement', {
+        title: '🗑️ Utilisateur supprimé',
+        icon: 'trash'
+      });
       loadUsers();
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de la suppression' });
+      toast.error('Impossible de supprimer cet utilisateur', {
+        title: 'Échec de la suppression',
+        icon: 'error'
+      });
     }
   };
 
   const handleToggleStatus = async (id) => {
     try {
       await userAPI.toggleStatus(id);
-      setMessage({ type: 'success', text: 'Statut modifié avec succès' });
+      toast.success('Le statut du compte a été modifié', {
+        title: '🔄 Statut mis à jour',
+        icon: 'user'
+      });
       loadUsers();
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors du changement de statut' });
+      toast.error('Impossible de modifier le statut', {
+        title: 'Erreur',
+        icon: 'error'
+      });
     }
   };
 
@@ -105,23 +151,34 @@ function Users() {
     try {
       const response = await userAPI.resetPassword(id);
       const newPassword = response.data.data.temporaryPassword;
-      setMessage({ 
-        type: 'success', 
-        text: `Mot de passe réinitialisé pour ${username}. Nouveau mot de passe: ${newPassword}` 
+      toast.success(`Un nouveau mot de passe a été généré pour ${username}`, {
+        title: '🔑 Mot de passe réinitialisé',
+        icon: 'password',
+        details: `Nouveau mot de passe : ${newPassword}`,
+        duration: 20000
       });
       loadUsers();
     } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de la réinitialisation' });
+      toast.error(error.response?.data?.message || 'Erreur lors de la réinitialisation', {
+        title: 'Échec de la réinitialisation',
+        icon: 'error'
+      });
     }
   };
 
   const handleUnlock = async (id) => {
     try {
       await userAPI.unlock(id);
-      setMessage({ type: 'success', text: 'Utilisateur déverrouillé avec succès' });
+      toast.success('Le compte a été déverrouillé avec succès', {
+        title: '🔓 Compte déverrouillé',
+        icon: 'unlock'
+      });
       loadUsers();
     } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur' });
+      toast.error(error.response?.data?.message || 'Impossible de déverrouiller le compte', {
+        title: 'Échec du déverrouillage',
+        icon: 'error'
+      });
     }
   };
 
@@ -190,14 +247,6 @@ function Users() {
           </button>
         </div>
       </div>
-
-      {message.text && (
-        <div className={`alert alert-${message.type} animate-fadeIn`}>
-          <span className="alert-icon">{message.type === 'success' ? '✓' : '⚠️'}</span>
-          {message.text}
-          <button className="alert-close" onClick={() => setMessage({ type: '', text: '' })}>×</button>
-        </div>
-      )}
 
       <div className="content-card">
         <div className="content-card-header">
@@ -276,20 +325,27 @@ function Users() {
                           Unlock
                         </button>
                       )}
-                      <button 
-                        onClick={() => handleResetPassword(user.id, user.username)} 
-                        className="btn btn-warning btn-sm"
-                        title="Reset password"
-                      >
-                        🔑 Reset
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteUser(user.id)} 
-                        className="btn btn-danger btn-sm"
-                        title="Delete user"
-                      >
-                        Delete
-                      </button>
+                      {!isManager && (
+                        <button 
+                          onClick={() => handleResetPassword(user.id, user.username)} 
+                          className="btn btn-warning btn-sm"
+                          title="Reset password"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                          </svg>
+                          Reset
+                        </button>
+                      )}
+                      {!isManager && (
+                        <button 
+                          onClick={() => handleDeleteUser(user.id)} 
+                          className="btn btn-danger btn-sm"
+                          title="Delete user"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -437,7 +493,7 @@ function Users() {
                   <div className="form-group">
                     <label className="form-label">Attribuer un rôle</label>
                     <div className="roles-grid">
-                      {roles.map(role => (
+                      {availableRoles.map(role => (
                         <label key={role.id} className={`role-checkbox ${formData.roles.includes(role.name) ? 'selected' : ''}`}>
                           <input
                             type="radio"

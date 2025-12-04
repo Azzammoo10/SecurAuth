@@ -11,6 +11,7 @@ import Register from './pages/Register';
 import AccountSecurity from './pages/AccountSecurity';
 import ForceChangePassword from './pages/ForceChangePassword';
 import Navbar from './components/Navbar';
+import { ToastProvider } from './components/Toast';
 import './App.css';
 
 function App() {
@@ -27,25 +28,30 @@ function App() {
     if (!isAuthenticated) {
       return <Navigate to="/login" />;
     }
+    // Rediriger vers la page de changement de mot de passe si nécessaire
+    if (mustChangePassword) {
+      return <Navigate to="/change-password" />;
+    }
     return children;
   };
 
   return (
-    <Router>
-      <div className="app">
-        {isAuthenticated && !mustChangePassword && <Navbar setIsAuthenticated={setIsAuthenticated} />}
-        <Routes>
-          <Route path="/register" element={<Register />} />
-          <Route 
-            path="/login" 
-            element={
-              isAuthenticated ? <Navigate to="/dashboard" /> : <Login setIsAuthenticated={setIsAuthenticated} setMustChangePassword={setMustChangePassword} />
-            } 
-          />
+    <ToastProvider>
+      <Router>
+        <div className="app">
+          {isAuthenticated && !mustChangePassword && <Navbar setIsAuthenticated={setIsAuthenticated} />}
+          <Routes>
+            <Route path="/register" element={<Register />} />
+            <Route 
+              path="/login" 
+              element={
+                isAuthenticated ? <Navigate to="/dashboard" /> : <Login setIsAuthenticated={setIsAuthenticated} setMustChangePassword={setMustChangePassword} />
+              } 
+            />
           <Route 
             path="/change-password" 
             element={
-              isAuthenticated ? <ForceChangePassword /> : <Navigate to="/login" />
+              isAuthenticated ? <ForceChangePassword setMustChangePassword={setMustChangePassword} /> : <Navigate to="/login" />
             } 
           />
           <Route
@@ -97,9 +103,10 @@ function App() {
             }
           />
           <Route path="/" element={<Navigate to="/dashboard" />} />
-        </Routes>
-      </div>
-    </Router>
+          </Routes>
+        </div>
+      </Router>
+    </ToastProvider>
   );
 }
 

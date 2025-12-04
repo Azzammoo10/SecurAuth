@@ -3,10 +3,10 @@ import { auditAPI } from '../services/api';
 
 function AuditLogs() {
   const [logs, setLogs] = useState([]);
+  const [filteredLogs, setFilteredLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
-    username: '',
-    action: '',
+    search: '',
     success: '',
   });
   const [page, setPage] = useState(0);
@@ -20,6 +20,7 @@ function AuditLogs() {
     try {
       const response = await auditAPI.getAll(page, 20);
       setLogs(response.data.data.content);
+      setFilteredLogs(response.data.data.content);
       setTotalPages(response.data.data.totalPages);
     } catch (error) {
       console.error('Error loading logs:', error);
@@ -28,30 +29,40 @@ function AuditLogs() {
     }
   };
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const searchFilters = {
-        ...filters,
-        success: filters.success === '' ? null : filters.success === 'true',
-        page,
-        size: 20,
-      };
-      const response = await auditAPI.search(searchFilters);
-      setLogs(response.data.data.content);
-      setTotalPages(response.data.data.totalPages);
-    } catch (error) {
-      console.error('Error searching logs:', error);
-    } finally {
-      setLoading(false);
+  // Fonction pour filtrer les logs localement
+  const applyFilters = () => {
+    let filtered = [...logs];
+    
+    // Filtre de recherche globale
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(log => 
+        log.username?.toLowerCase().includes(searchLower) ||
+        log.action?.toLowerCase().includes(searchLower) ||
+        log.details?.toLowerCase().includes(searchLower) ||
+        log.ipAddress?.toLowerCase().includes(searchLower)
+      );
     }
+    
+    // Filtre par statut
+    if (filters.success !== '') {
+      const isSuccess = filters.success === 'true';
+      filtered = filtered.filter(log => log.success === isSuccess);
+    }
+    
+    setFilteredLogs(filtered);
   };
 
+  // Appliquer les filtres quand ils changent
+  useEffect(() => {
+    if (logs.length > 0) {
+      applyFilters();
+    }
+  }, [filters, logs]);
+
   const handleReset = () => {
-    setFilters({ username: '', action: '', success: '' });
-    setPage(0);
-    loadLogs();
+    setFilters({ search: '', success: '' });
+    setFilteredLogs(logs);
   };
 
   const getActionBadgeClass = (action) => {
@@ -103,56 +114,73 @@ function AuditLogs() {
             </div>
             <h2>Filtres de recherche</h2>
           </div>
+          {(filters.search || filters.success) && (
+            <span className="content-card-badge" style={{ 
+              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1))',
+              color: 'var(--color-info)'
+            }}>
+              {filteredLogs.length} / {logs.length} résultat(s)
+            </span>
+          )}
         </div>
         <div className="content-card-body">
-        <form onSubmit={handleSearch}>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="form-group">
-              <label className="form-label">Username</label>
-              <input
-                type="text"
-                className="form-input"
-                value={filters.username}
-                onChange={(e) => setFilters({ ...filters, username: e.target.value })}
-                placeholder="Search by username..."
-              />
+          <div className="flex gap-2 items-end">
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="form-label">Recherche globale</label>
+              <div style={{ position: 'relative' }}>
+                <svg 
+                  width="18" 
+                  height="18" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="var(--text-muted)" 
+                  strokeWidth="2"
+                  style={{ 
+                    position: 'absolute', 
+                    left: '12px', 
+                    top: '50%', 
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none'
+                  }}
+                >
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  placeholder="Rechercher par username, action, détails ou adresse IP..."
+                  style={{ paddingLeft: '40px' }}
+                />
+              </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Action</label>
-              <input
-                type="text"
-                className="form-input"
-                value={filters.action}
-                onChange={(e) => setFilters({ ...filters, action: e.target.value })}
-                placeholder="e.g., LOGIN_SUCCESS..."
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Status</label>
+            <div className="form-group" style={{ minWidth: '150px' }}>
+              <label className="form-label">Statut</label>
               <select
                 className="form-select"
                 value={filters.success}
                 onChange={(e) => setFilters({ ...filters, success: e.target.value })}
               >
-                <option value="">All</option>
-                <option value="true">Success</option>
-                <option value="false">Failed</option>
+                <option value="">Tous</option>
+                <option value="true">Succès</option>
+                <option value="false">Échec</option>
               </select>
             </div>
-          </div>
-          <div className="btn-group">
-            <button type="submit" className="btn btn-primary">
+            <button 
+              type="button" 
+              onClick={handleReset} 
+              className="btn btn-secondary"
+              style={{ height: '42px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
               </svg>
-              Rechercher
-            </button>
-            <button type="button" onClick={handleReset} className="btn btn-secondary">
               Réinitialiser
             </button>
           </div>
-        </form>
         </div>
       </div>
 
@@ -168,14 +196,14 @@ function AuditLogs() {
             <h2>Résultats</h2>
           </div>
           <div className="content-card-actions">
-            <span className="content-card-badge">{logs.length} entrée(s)</span>
+            <span className="content-card-badge">{filteredLogs.length} entrée(s)</span>
             <div className="btn-group">
             <button
               onClick={() => setPage(p => Math.max(0, p - 1))}
               disabled={page === 0}
               className="btn btn-sm btn-secondary"
             >
-              ← Previous
+              ← Précédent
             </button>
             <span className="pagination-info">
               Page {page + 1} / {totalPages}
@@ -185,7 +213,7 @@ function AuditLogs() {
               disabled={page >= totalPages - 1}
               className="btn btn-sm btn-secondary"
             >
-              Next →
+              Suivant →
             </button>
           </div>
           </div>
@@ -204,32 +232,44 @@ function AuditLogs() {
               </tr>
             </thead>
             <tbody>
-              {logs.map((log) => (
-                <tr key={log.id}>
-                  <td className="font-mono text-sm">
-                    {new Date(log.timestamp).toLocaleString('en-US')}
-                  </td>
-                  <td>
-                    <span className="text-cyber-green font-mono">{log.username}</span>
-                  </td>
-                  <td>
-                    <span className={`badge ${getActionBadgeClass(log.action)}`}>
-                      {log.action}
-                    </span>
-                  </td>
-                  <td className="text-muted text-truncate" style={{ maxWidth: '300px' }}>
-                    {log.details || '-'}
-                  </td>
-                  <td className="font-mono text-sm text-muted">
-                    {log.ipAddress || '-'}
-                  </td>
-                  <td>
-                    <span className={`badge ${log.success ? 'badge-success' : 'badge-danger'}`}>
-                      {log.success ? 'SUCCESS' : 'FAILED'}
-                    </span>
+              {filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="text-center text-muted" style={{ padding: '2rem' }}>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 0.5rem', display: 'block', opacity: 0.5 }}>
+                      <circle cx="11" cy="11" r="8"/>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    Aucun résultat avec ces filtres
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredLogs.map((log) => (
+                  <tr key={log.id}>
+                    <td className="font-mono text-sm">
+                      {new Date(log.timestamp).toLocaleString('fr-FR')}
+                    </td>
+                    <td>
+                      <span className="text-cyber-green font-mono">{log.username}</span>
+                    </td>
+                    <td>
+                      <span className={`badge ${getActionBadgeClass(log.action)}`}>
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="text-muted text-truncate" style={{ maxWidth: '300px' }}>
+                      {log.details || '-'}
+                    </td>
+                    <td className="font-mono text-sm text-muted">
+                      {log.ipAddress || '-'}
+                    </td>
+                    <td>
+                      <span className={`badge ${log.success ? 'badge-success' : 'badge-danger'}`}>
+                        {log.success ? 'SUCCESS' : 'FAILED'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
