@@ -22,14 +22,11 @@ dist-ssr/
 *.log
 logs/
 
-# Environment
+# Environment files (contains secrets)
 .env
 .env.local
 .env.production
-
-# Sensitive Configuration
-backend/src/main/resources/application.yml
-backend/target/classes/application.yml
+backend/.env
 
 # Database
 *.db
@@ -37,6 +34,3 @@ backend/target/classes/application.yml
 
 # OS
 Thumbs.db
-
-
-application.yml

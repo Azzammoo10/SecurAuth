@@ -7,7 +7,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/secureauth}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
     hikari:
       minimum-idle: 5
@@ -43,7 +43,7 @@ spring:
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  secret: ${JWT_SECRET:your-256-bit-secret-key-here-change-in-production}
   expiration: ${JWT_EXPIRATION:3600000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:86400000}
 
