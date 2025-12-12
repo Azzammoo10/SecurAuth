@@ -10,12 +10,12 @@
 </p>
 
 <p align="center">
-  <a href="#-fonctionnalités">Fonctionnalités</a> •
-  <a href="#%EF%B8%8F-architecture">Architecture</a> •
-  <a href="#-démarrage-rapide">Démarrage</a> •
-  <a href="#️-captures-décran">Captures d'Écran</a> •
-  <a href="#-documentation-api">API</a> •
-  <a href="#-contributeurs">Contributeurs</a>
+  <a href="#fonctionnalités">Fonctionnalités</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#démarrage-rapide">Démarrage</a> •
+  <a href="#captures-décran">Captures d'Écran</a> •
+  <a href="#documentation-api">API</a> •
+  <a href="#contributeurs">Contributeurs</a>
 </p>
 
 <p align="center">
@@ -27,60 +27,60 @@
 
 ---
 
-## 📋 Table des Matières
+## Table des Matières
 
-- [🎯 Présentation](#-présentation)
-- [✨ Fonctionnalités](#-fonctionnalités)
-- [🏗️ Architecture](#️-architecture)
-- [🚀 Démarrage Rapique](#-démarrage-rapide)
-- [🖼️ Captures d'Écran](#️-captures-décran)
-- [📖 Documentation API](#-documentation-api)
-- [🔐 Sécurité](#-sécurité)
-- [👥 Rôles et Permissions](#-rôles-et-permissions)
-- [🛠️ Stack Technique](#️-stack-technique)
-- [📁 Structure du Projet](#-structure-du-projet)
-- [👤 Contributeurs](#-contributeurs)
+- [Présentation](#présentation)
+- [Fonctionnalités](#fonctionnalités)
+- [Architecture](#architecture)
+- [Démarrage Rapique](#démarrage-rapide)
+- [Captures d'Écran](#captures-décran)
+- [Documentation API](#documentation-api)
+- [Sécurité](#sécurité)
+- [Rôles et Permissions](#rôles-et-permissions)
+- [Stack Technique](#stack-technique)
+- [Structure du Projet](#structure-du-projet)
+- [Contributeurs](#contributeurs)
 
 ---
 
-## 🎯 Présentation
+## Présentation
 
 **SecureAuth** est une plateforme complète de **Gestion des Identités et des Accès (IAM)** conçue pour les entreprises modernes. Elle offre une gestion centralisée des utilisateurs, des mécanismes d'authentification robustes, un contrôle d'accès granulaire et un historique complet des audits.
 
-### 🌟 Points Clés
+### Points Clés
 
 | Fonctionnalité | Description |
 |----------------|-------------|
-| 🔑 **Identité Centralisée** | Gérez tous les utilisateurs depuis un tableau de bord unique |
-| 🛡️ **Authentification Multi-Facteurs** | Intégration Google Authenticator (TOTP) |
-| 👮 **RBAC** | Permissions granulaires basées sur les rôles |
-| 📝 **Piste d'Audit Complète** | Traçabilité de chaque action avec logs détaillés |
-| 🔄 **Self-Service** | Les utilisateurs gèrent leurs propres paramètres de sécurité |
+| **Identité Centralisée** | Gérez tous les utilisateurs depuis un tableau de bord unique |
+| **Authentification Multi-Facteurs** | Intégration Google Authenticator (TOTP) |
+| **RBAC** | Permissions granulaires basées sur les rôles |
+| **Piste d'Audit Complète** | Traçabilité de chaque action avec logs détaillés |
+| **Self-Service** | Les utilisateurs gèrent leurs propres paramètres de sécurité |
 
 ---
 
-## ✨ Fonctionnalités
+## Fonctionnalités
 
-### 🔐 Authentification & Sécurité
+### Authentification & Sécurité
 
 <table>
 <tr>
 <td width="50%">
 
 **Authentification JWT**
-- ⚡ Token d'accès
-- 🔄 Token de rafraîchissement
-- 🚫 Révocation à la déconnexion
-- 🔒 Stockage sécurisé
+- Token d'accès
+- Token de rafraîchissement
+- Révocation à la déconnexion
+- Stockage sécurisé
 
 </td>
 <td width="50%">
 
 **Authentification à Deux Facteurs**
-- 📱 Support Google Authenticator
-- 🔢 TOTP (conforme RFC 6238)
-- 📷 Génération de QR Code
-- ✅ Activation/Désactivation facile
+- Support Google Authenticator
+- TOTP (conforme RFC 6238)
+- Génération de QR Code
+- Activation/Désactivation facile
 
 </td>
 </tr>
@@ -88,44 +88,44 @@
 <td width="50%">
 
 **Sécurité des Mots de Passe**
-- 🔐 Hachage BCrypt avec sel
-- 📏 Exigences de complexité
-- 🕐 Historique (5 derniers)
-- ⏰ Changement forcé à la première connexion
+- Hachage BCrypt avec sel
+- Exigences de complexité
+- Historique (5 derniers)
+- Changement forcé à la première connexion
 
 </td>
 <td width="50%">
 
 **Protection des Comptes**
-- 🚫 Verrouillage après 3 échecs
-- 🔓 Déverrouillage par admin
-- 📍 Suivi IP & User-Agent
-- 🛑 Gestion des sessions
+- Verrouillage après 3 échecs
+- Déverrouillage par admin
+- Suivi IP & User-Agent
+- Gestion des sessions
 
 </td>
 </tr>
 </table>
 
-### 👥 Gestion des Utilisateurs
+### Gestion des Utilisateurs
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                  CYCLE DE VIE UTILISATEUR                    │
 ├──────────────────────────────────────────────────────────────┤
-│  📝 Inscription  →  ✅ Approbation  →  🔐 Activation        │
-│       ↓                   ↓                ↓                 │
-│  📧 Notification  ←  👤 Admin      →  🎉 Email de bienvenue │
+│  Inscription  →  Approbation  →  Activation                  │
+│       ↓               ↓                ↓                     │
+│  Notification  ←  Admin       →  Email de bienvenue          │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-- ➕ Création d'utilisateurs avec identifiants auto-générés
-- ✏️ Modification des profils et rôles
-- 🔄 Activation/Désactivation des comptes
-- 🔓 Déverrouillage des comptes verrouillés
-- 🔑 Réinitialisation des mots de passe
-- 🗑️ Suppression d'utilisateurs
+- Création d'utilisateurs avec identifiants auto-générés
+- Modification des profils et rôles
+- Activation/Désactivation des comptes
+- Déverrouillage des comptes verrouillés
+- Réinitialisation des mots de passe
+- Suppression d'utilisateurs
 
-### 📊 Journaux d'Audit
+### Journaux d'Audit
 
 | Action | Détails Capturés |
 |--------|------------------|
@@ -138,7 +138,7 @@
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
@@ -152,18 +152,18 @@
           ▼                ▼                ▼
 ┌────────────────────────────────────────────────────────────────┐
 │                      PASSERELLE API                            │
-│  ┌──────────────────────────────────────────────────────────┐ │
-│  │             Spring Security + Filtre JWT                  │ │
-│  └──────────────────────────────────────────────────────────┘ │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │             Spring Security + Filtre JWT                 │  │
+│  └──────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────┘
           │
           ▼
 ┌────────────────────────────────────────────────────────────────┐
 │                    SERVICES BACKEND                            │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐         │
-│  │   Auth   │ │   User   │ │   Role   │ │  Audit   │         │
-│  │ Service  │ │ Service  │ │ Service  │ │ Service  │         │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘         │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐          │
+│  │   Auth   │ │   User   │ │   Role   │ │  Audit   │          │
+│  │ Service  │ │ Service  │ │ Service  │ │ Service  │          │  
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘          │
 └───────┼────────────┼────────────┼────────────┼────────────────┘
         │            │            │            │
         ▼            ▼            ▼            ▼
@@ -178,19 +178,17 @@
 
 ---
 
-## 🚀 Démarrage Rapide
+## Démarrage Rapide
 
 ### Prérequis
 
 | Requis | Version |
 |--------|---------|
-| ☕ Java | 17+ |
-| 📦 Maven | 3.8+ |
-| 🐘 PostgreSQL | 14+ |
-| 📗 Node.js | 18+ |
-| 📦 npm | 9+ |
-
-### 📥 Installation
+| Java | 17+ |
+| Maven | 3.8+ |
+| PostgreSQL | 14+ |
+| Node.js | 18+ |
+| npm | 9+ |
 
 ```bash
 # 1. Cloner le dépôt
@@ -198,40 +196,138 @@ git clone https://github.com/riyad4589/SecureAuth.git
 cd SecureAuth
 ```
 
-### 🗄️ Configuration Base de Données
+### Configuration Base de Données
 
 ```sql
 -- Créer la base de données
 CREATE DATABASE secureauth;
 ```
 
-### ⚙️ Configuration Backend
+### Configuration Backend
 
-Créer le fichier `backend/src/main/resources/application.yml` :
+Créer le fichier `backend/src/main/resources/application.yml` avec le contenu suivant :
 
 ```yaml
 spring:
+  application:
+    name: secureauth-backend
+    admin:
+      enabled: false
+  
+  # Configuration de la base de données PostgreSQL
   datasource:
     url: jdbc:postgresql://localhost:5432/secureauth
-    username: postgres
-    password: votre_mot_de_passe
-    
-jwt:
-  secret: votre_secret_jwt_64_caracteres_minimum
-  expiration: 3600000
+    username: votre_username_postgres
+    password: votre_mot_de_passe_postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 300000
+      max-lifetime: 600000
+      connection-timeout: 20000
+      pool-name: SecureAuthHikariPool
   
-spring:
-  mail:
-    username: votre_email@gmail.com
-    password: votre_app_password
+  # Configuration JPA/Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+  
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
 
+  jmx:
+    enabled: false
+  devtools:
+    restart:
+      enabled: false
+
+  # Configuration Email (Gmail SMTP)
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: votre_email@gmail.com
+    password: votre_app_password_gmail
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+# Configuration JWT
+jwt:
+  secret: a-string-secret-at-least-256-bits-long  # HHHHH Becurful
+  expiration: 3600000          # 1 heure en millisecondes
+  refresh-expiration: 86400000 # 24 heures en millisecondes
+
+# Configuration Sécurité
+security:
+  max-login-attempts: 3
+  account-lock-duration: 900000  # 15 minutes en millisecondes
+
+# Configuration Serveur
+server:
+  port: 8080
+  address: 0.0.0.0
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# Configuration OpenAPI/Swagger
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+# Configuration Logging
+logging:
+  level:
+    com.secureauth: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: WARN
+
+# Configuration Application
+app:
+  name: SecureAuth+
+  url: http://localhost:5173
+  mail:
+    from: votre_email@gmail.com
+    from-name: SecureAuth+ Security Team
+    cc-emails: email1@gmail.com, email2@gmail.com
+
+# Configuration Cloudinary (pour l'upload d'images)
 cloudinary:
-  cloud-name: TON_CLOUD_NAME
-  api-key: TA_CLE_API
-  api-secret: TON_SECRET
+  cloud-name: votre_cloud_name
+  api-key: votre_api_key
+  api-secret: votre_api_secret
 ```
 
-### 🚀 Lancement
+> **Notes importantes :**
+> - Générez un secret JWT sécurisé de 64 caractères minimum
+> - Pour Gmail, utilisez un [App Password](https://support.google.com/accounts/answer/185833) au lieu de votre mot de passe réel
+> - Créez un compte [Cloudinary](https://cloudinary.com/) gratuit pour la gestion des images
+> - Modifiez `app.url` si votre frontend utilise un port différent
+
+### Lancement
 
 ```bash
 # Backend (Terminal 1)
@@ -246,21 +342,21 @@ npm run dev
 
 | Service | URL |
 |---------|-----|
-| 🖥️ Frontend | http://localhost:5173 |
-| ⚙️ Backend | http://localhost:8080 |
-| 📚 Swagger | http://localhost:8080/swagger-ui.html |
+| Frontend | http://localhost:5173 |
+| Backend | http://localhost:8080 |
+| Swagger | http://localhost:8080/swagger-ui.html |
 
-### 🔑 Identifiants par Défaut
+### Identifiants par Défaut
 
 | Rôle | Utilisateur | Mot de passe |
-|------|-------------|--------------|
-| 👑 Admin | `admin` | `Admin@123` |
+|------|-------------|--------------|  
+| Admin | `admin` | `Admin@123` |
 
-> ⚠️ **Important** : Créer d'autre utilisateurs pour les autres roles
+> **Important** : Créer d'autre utilisateurs pour les autres roles
 
 ---
 
-## 🖼️ Captures d'Écran
+## Captures d'Écran
 
 ### Login
 ![Login Page](screens/login.png)
@@ -277,7 +373,7 @@ npm run dev
 
 ---
 
-### 👑 Espace Admin
+### Espace Admin
 
 #### Dashboard Admin
 ![Dashboard Admin](screens/admin/dashboard.png)
@@ -300,7 +396,7 @@ npm run dev
 #### Ajouter un Utilisateur
 ![Ajouter un Utilisateur](screens/admin/add-user.png)
 
-### 👑 Reset Password
+### Reset Password
 ![Reset Password](screens/resetpass.png)
 
 #### Gestion des Rôles
@@ -314,7 +410,7 @@ npm run dev
 
 ---
 
-### 📊 Espace Manager
+### Espace Manager
 
 #### Dashboard Manager
 ![Dashboard Manager](screens/manager/dash.png)
@@ -345,7 +441,7 @@ npm run dev
 
 ---
 
-### 🔒 Espace Security
+### Espace Security
 
 #### Dashboard Security
 ![Dashboard Security](screens/security/dash.png)
@@ -367,7 +463,7 @@ npm run dev
 
 ---
 
-### 👤 Espace User
+### Espace User
 
 #### Dashboard User
 ![Dashboard User](screens/user/dash.png)
@@ -386,17 +482,17 @@ npm run dev
 
 ---
 
-## 📖 Documentation API
+## Documentation API
 
-### 🌐 Base URL
+### Base URL
 
 ```
 /api/v1
 ```
 
-### 🔗 Endpoints Principaux
+### Endpoints Principaux
 
-<summary><strong>🔐 Authentification</strong></summary>
+<summary><strong>Authentification</strong></summary>
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
@@ -407,7 +503,7 @@ npm run dev
 | `POST` | `/auth/register` | Demande d'inscription publique |
 
 
-<summary><strong>👥 Utilisateurs</strong></summary>
+<summary><strong>Utilisateurs</strong></summary>
 
 | Méthode | Endpoint | Description | Rôle |
 |---------|----------|-------------|------|
@@ -420,7 +516,7 @@ npm run dev
 | `PATCH` | `/users/{id}/unlock` | Déverrouiller | ADMIN |
 
 
-<summary><strong>🎭 Rôles</strong></summary>
+<summary><strong>Rôles</strong></summary>
 
 | Méthode | Endpoint | Description | Rôle |
 |---------|----------|-------------|------|
@@ -430,7 +526,7 @@ npm run dev
 | `DELETE` | `/roles/{id}` | Supprimer un rôle | ADMIN |
 
 
-<summary><strong>📊 Audit</strong></summary>
+<summary><strong>Audit</strong></summary>
 
 | Méthode | Endpoint | Description | Rôle |
 |---------|----------|-------------|------|
@@ -439,7 +535,7 @@ npm run dev
 | `POST` | `/audit/export` | Exporter les logs | ADMIN, SECURITY |
 
 
-### 📬 Collection Postman
+### Collection Postman
 
 ```
 postman/SecureAuth_API.postman_collection.json
@@ -447,9 +543,9 @@ postman/SecureAuth_API.postman_collection.json
 
 ---
 
-## 🔐 Sécurité
+## Sécurité
 
-### 🛡️ Couches de Sécurité
+### Couches de Sécurité
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -473,19 +569,19 @@ postman/SecureAuth_API.postman_collection.json
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 🔒 Exigences Mot de Passe
+### Exigences Mot de Passe
 
-- ✅ Minimum 8 caractères
-- ✅ Au moins 1 majuscule
-- ✅ Au moins 1 minuscule
-- ✅ Au moins 1 chiffre
-- ✅ Au moins 1 caractère spécial (!@#$%^&*)
+- Minimum 8 caractères
+- Au moins 1 majuscule
+- Au moins 1 minuscule
+- Au moins 1 chiffre
+- Au moins 1 caractère spécial (!@#$%^&*)
 
 ---
 
-## 👥 Rôles et Permissions
+## Rôles et Permissions
 
-### 📊 Hiérarchie des Rôles
+### Hiérarchie des Rôles
 
 ```
          ┌─────────┐
@@ -508,7 +604,7 @@ postman/SecureAuth_API.postman_collection.json
          └─────────┘
 ```
 
-### 🎭 Matrice des Permissions
+### Matrice des Permissions
 
 | Permission | ADMIN | SECURITY | MANAGER | USER |
 |------------|:-----:|:--------:|:-------:|:----:|
@@ -525,7 +621,7 @@ postman/SecureAuth_API.postman_collection.json
 
 ---
 
-## 🛠️ Stack Technique
+## Stack Technique
 
 ### Backend
 
@@ -549,47 +645,47 @@ postman/SecureAuth_API.postman_collection.json
 
 ---
 
-## 📁 Structure du Projet
+## Structure du Projet
 
 ```
 SecureAuth/
-├── 📁 backend/
-│   ├── 📁 src/main/java/com/secureauth/
-│   │   ├── 📁 config/          # Configuration Security & JWT
-│   │   ├── 📁 controllers/     # Endpoints REST
-│   │   ├── 📁 dto/             # Objets de transfert
-│   │   ├── 📁 entities/        # Entités JPA
-│   │   ├── 📁 exceptions/      # Exceptions personnalisées
-│   │   ├── 📁 repositories/    # Couche d'accès aux données
-│   │   └── 📁 services/        # Logique métier
-│   ├── 📁 src/main/resources/
-│   │   └── 📄 application.yml  # Configuration
-│   ├── 📄 Dockerfile
-│   └── 📄 pom.xml
+├── backend/
+│   ├── src/main/java/com/secureauth/
+│   │   ├── config/          # Configuration Security & JWT
+│   │   ├── controllers/     # Endpoints REST
+│   │   ├── dto/             # Objets de transfert
+│   │   ├── entities/        # Entités JPA
+│   │   ├── exceptions/      # Exceptions personnalisées
+│   │   ├── repositories/    # Couche d'accès aux données
+│   │   └── services/        # Logique métier
+│   ├── src/main/resources/
+│   │   └── application.yml  # Configuration
+│   ├── Dockerfile
+│   └── pom.xml
 │
-├── 📁 frontend/
-│   ├── 📁 src/
-│   │   ├── 📁 components/      # Composants réutilisables
-│   │   ├── 📁 pages/           # Pages de l'application
-│   │   ├── 📁 services/        # Services API
-│   │   ├── 📁 styles/          # Fichiers CSS
-│   │   └── 📄 App.jsx          # Composant racine
-│   ├── 📄 package.json
-│   └── 📄 vite.config.js
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # Composants réutilisables
+│   │   ├── pages/           # Pages de l'application
+│   │   ├── services/        # Services API
+│   │   ├── styles/          # Fichiers CSS
+│   │   └── App.jsx          # Composant racine
+│   ├── package.json
+│   └── vite.config.js
 │
-├── 📁 database/
-│   ├── 📄 init.sql             # Schéma initial
-│   └── 📄 migration_*.sql      # Migrations
+├── database/
+│   ├── init.sql             # Schéma initial
+│   └── migration_*.sql      # Migrations
 │
-├── 📁 postman/
-│   └── 📄 SecureAuth_API.postman_collection.json
+├── postman/
+│   └── SecureAuth_API.postman_collection.json
 │
-└── 📄 README.md
+└── README.md
 ```
 
 ---
 
-<h2 align="center">👤 Contributeurs</h2>
+<h2 align="center">Contributeurs</h2>
 
 <p align="center">
 <table align="center">
@@ -599,17 +695,17 @@ SecureAuth/
 <img src="https://github.com/riyad4589.png" width="150px;" style="border-radius: 50%;" alt="Mohamed Riyad MAJGHIROU"/><br /><br />
 <b style="font-size: 18px;">Mohamed Riyad MAJGHIROU</b>
 </a><br /><br />
-<a href="mailto:riyadmaj10@gmail.com">📧 Email</a> •
-<a href="https://www.linkedin.com/in/mohamed-riyad-majghirou-5b62aa388/">💼 LinkedIn</a>
+<a href="mailto:riyadmaj10@gmail.com">Email</a> •
+<a href="https://www.linkedin.com/in/mohamed-riyad-majghirou-5b62aa388/">LinkedIn</a>
 </td>
 <td align="center" width="300">
 <a href="https://github.com/Azzammoo10">
 <img src="https://github.com/Azzammoo10.png" width="150px;" style="border-radius: 50%;" alt="Mohamed AZZAM"/><br /><br />
 <b style="font-size: 18px;">Mohamed AZZAM</b>
 </a><br /><br />
-<a href="mailto:azzam.moo10@gmail.com">📧 Email</a> •
-<a href="https://www.linkedin.com/in/mohamed-azzam-93115823a/">💼 LinkedIn</a> •
-<a href="https://azzammo.com">🌐 Portfolio</a>
+<a href="mailto:azzam.moo10@gmail.com">Email</a> •
+<a href="https://www.linkedin.com/in/mohamed-azzam-93115823a/">LinkedIn</a> •
+<a href="https://azzammo.com">Portfolio</a>
 </td>
 </tr>
 </table>
@@ -625,11 +721,11 @@ SecureAuth/
 ---
 
 <p align="center">
-  <strong>⭐ Mettez une étoile si ce projet vous a été utile !</strong>
+  <strong>Mettez une étoile si ce projet vous a été utile !</strong>
 </p>
 
 ---
 
 <p align="center">
-  <a href="#top">⬆️ Retour en haut</a>
+  <a href="#top">Retour en haut</a>
 </p>
